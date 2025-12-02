@@ -262,21 +262,21 @@ This step decompresses the final VCF file, making it available as a standard tex
 
 Step 20: VEP Annotation (Variant Effect Predictor)
 
->vep -i ~/1/SRR13018652.final.vcf \
-    >-o ~/1/SRR13018652.annotated.vcf \
-    >--cache \
-    >--dir_cache /home/.vep \
-    >--species homo_sapiens \
-    >--assembly GRCh38 \
-    >--symbol \
-    >--canonical \
-    >--protein \
-    >--af \
-    >--sift b \
-    >--polyphen b \
-    >--mane \
-    >--vcf \
-    >--force_overwrite
+vep -i ~/1/SRR13018652.final.vcf \
+    -o ~/1/SRR13018652.annotated.vcf \
+    --cache \
+    --dir_cache /home/.vep \
+    --species homo_sapiens \
+    --assembly GRCh38 \
+    --symbol \
+    --canonical \
+    --protein \
+    --af \
+    --sift b \
+    --polyphen b \
+    --mane \
+    --vcf \
+    --force_overwrite
 
 
 Explanation:
@@ -642,20 +642,20 @@ Step 28: Prostate Cancer Analysis for Male Patients
 >PMS2
 >EOF
 
-    >bcftools view -h /home/1/SRR13018652.annotated.vcf > /home/1/header_prostate.vcf
+    bcftools view -h /home/1/SRR13018652.annotated.vcf > /home/1/header_prostate.vcf
     
-    >bcftools view -H /home/1/SRR13018652.annotated.vcf | \
-      >grep -E "$(paste -s -d '|' /home/1/prostate_cancer_genes.txt)" | \
-      >cat /home1/header_prostate.vcf - > /home/1/SRR13018652.prostate_cancer_genes.vcf
+    bcftools view -H /home/1/SRR13018652.annotated.vcf | \
+      grep -E "$(paste -s -d '|' /home/1/prostate_cancer_genes.txt)" | \
+      cat /home1/header_prostate.vcf - > /home/1/SRR13018652.prostate_cancer_genes.vcf
 
-    >prostate_variants=$(grep -v "^#" /home/1/SRR13018652.prostate_cancer_genes.vcf | wc -l)
-    >echo "Variants in prostate cancer genes: $prostate_variants"
+    prostate_variants=$(grep -v "^#" /home/1/SRR13018652.prostate_cancer_genes.vcf | wc -l)
+    echo "Variants in prostate cancer genes: $prostate_variants"
     
-    >echo "" >> /home/1/final_clinical_report.md
-    >echo "### PROSTATE CANCER RISK ASSESSMENT" >> /home/1/final_clinical_report.md
-    >echo "Based on BRCA1 and TP53 mutations:" >> /home/1/final_clinical_report.md
-    >echo "- Lifetime prostate cancer risk: 20-25%" >> /home/1/final_clinical_report.md
-    >echo "- Consider PSA screening starting at age 40" >> /home/1/final_clinical_report.md
+    echo "" >> /home/1/final_clinical_report.md
+    echo "### PROSTATE CANCER RISK ASSESSMENT" >> /home/1/final_clinical_report.md
+    echo "Based on BRCA1 and TP53 mutations:" >> /home/1/final_clinical_report.md
+    echo "- Lifetime prostate cancer risk: 20-25%" >> /home/1/final_clinical_report.md
+    echo "- Consider PSA screening starting at age 40" >> /home/1/final_clinical_report.md
 >fi
 
 Explanation:
@@ -1017,21 +1017,21 @@ The results can be found in the /home/1/final_results/ directory, and the clinic
 
 Шаг 20: Аннотация с помощью VEP (Variant Effect Predictor / Предиктор эффекта вариантов)
 
->vep -i ~/1/SRR13018652.final.vcf \
-    >-o ~/1/SRR13018652.annotated.vcf \
-    >--cache \
-    >--dir_cache /home/.vep \
-    >--species homo_sapiens \
-    >--assembly GRCh38 \
-    >--symbol \
-    >--canonical \
-    >--protein \
-    >--af \
-    >--sift b \
-    >--polyphen b \
-    >--mane \
-    >--vcf \
-    >--force_overwrite
+vep -i ~/1/SRR13018652.final.vcf \
+    -o ~/1/SRR13018652.annotated.vcf \
+    --cache \
+    --dir_cache /home/.vep \
+    --species homo_sapiens \
+    --assembly GRCh38 \
+    --symbol \
+    --canonical \
+    --protein \
+    --af \
+    --sift b \
+    --polyphen b \
+    --mane \
+    --vcf \
+    --force_overwrite
 
 
 Объяснение:
@@ -1396,20 +1396,20 @@ chmod +x /home/1/analyze_key_mutations.sh
 >PMS2
 >EOF
 
-    >bcftools view -h /home/1/SRR13018652.annotated.vcf > /home/1/header_prostate.vcf
+    bcftools view -h /home/1/SRR13018652.annotated.vcf > /home/1/header_prostate.vcf
     
-    >bcftools view -H /home/1/SRR13018652.annotated.vcf | \
-      >grep -E "$(paste -s -d '|' /home/1/prostate_cancer_genes.txt)" | \
-      >cat /home1/header_prostate.vcf - > /home/1/SRR13018652.prostate_cancer_genes.vcf
+    bcftools view -H /home/1/SRR13018652.annotated.vcf | \
+      grep -E "$(paste -s -d '|' /home/1/prostate_cancer_genes.txt)" | \
+      cat /home1/header_prostate.vcf - > /home/1/SRR13018652.prostate_cancer_genes.vcf
 
-    >prostate_variants=$(grep -v "^#" /home/1/SRR13018652.prostate_cancer_genes.vcf | wc -l)
-    >echo "Variants in prostate cancer genes: $prostate_variants"
+    prostate_variants=$(grep -v "^#" /home/1/SRR13018652.prostate_cancer_genes.vcf | wc -l)
+    echo "Variants in prostate cancer genes: $prostate_variants"
     
-    >echo "" >> /home/1/final_clinical_report.md
-    >echo "### PROSTATE CANCER RISK ASSESSMENT" >> /home/1/final_clinical_report.md
-    >echo "Based on BRCA1 and TP53 mutations:" >> /home/1/final_clinical_report.md
-    >echo "- Lifetime prostate cancer risk: 20-25%" >> /home/1/final_clinical_report.md
-    >echo "- Consider PSA screening starting at age 40" >> /home/1/final_clinical_report.md
+    echo "" >> /home/1/final_clinical_report.md
+    echo "### PROSTATE CANCER RISK ASSESSMENT" >> /home/1/final_clinical_report.md
+    echo "Based on BRCA1 and TP53 mutations:" >> /home/1/final_clinical_report.md
+    echo "- Lifetime prostate cancer risk: 20-25%" >> /home/1/final_clinical_report.md
+    echo "- Consider PSA screening starting at age 40" >> /home/1/final_clinical_report.md
 >fi
 
 Объяснение:

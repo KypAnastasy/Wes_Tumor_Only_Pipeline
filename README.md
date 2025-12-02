@@ -11,7 +11,7 @@
 ### Project Overview
 Tumor-Only WES Analysis Pipeline for Breast Cancer
 
-#Description
+Description
 This repository contains a complete **whole exome sequencing (WES)** pipeline for tumor-only analysis, specifically designed for breast cancer. The pipeline includes multiple steps, from raw data download to clinical report generation.
 
 This analysis uses tools like **GATK**, **BWA-MEM2**, **bcftools**, **VEP**, and others, to process raw NGS data, call mutations, and provide clinically relevant results.
@@ -411,3 +411,33 @@ Reference and alternate alleles ($4 and $5).
 It also includes the Consequence Annotation (CSQ), which provides information on the gene symbol, mutation type, and the functional effect (e.g., missense, frameshift).
 
 The output displays these details in a readable format.
+
+Step 25: Determine Patient Sex
+
+>echo "Determining patient sex:"
+>y_reads=$(samtools idxstats /home/ser/1/SRR13018652.recal.bam | awk '$1 == "chrY" {print $3}')
+>echo "Y chromosome reads: $y_reads"
+
+>if [ "$y_reads" -gt 1000 ]; then
+    >echo "PATIENT SEX: MALE"
+    >sex="MALE"
+>else
+    >echo "PATIENT SEX: FEMALE"
+    >sex="FEMALE"
+>fi
+
+Explanation:
+
+This step determines the biological sex of the patient based on the presence of Y chromosome reads in the BAM file:
+
+samtools idxstats provides statistics about the reference chromosomes in the BAM file.
+
+The script checks the number of reads aligned to the Y chromosome (chrY):
+
+If the number of Y chromosome reads is greater than 1000, the patient is classified as male.
+
+Otherwise, the patient is classified as female.
+
+The determined sex (MALE or FEMALE) is stored in the sex variable.
+
+

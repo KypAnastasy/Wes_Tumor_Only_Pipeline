@@ -259,3 +259,77 @@ Explanation:
 
 This step decompresses the final VCF file, making it available as a standard text file (SRR13018652.final.vcf) for further analysis or visualization.
 
+Step 20: VEP Annotation (Variant Effect Predictor)
+
+>vep -i ~/1/SRR13018652.final.vcf \
+    >-o ~/1/SRR13018652.annotated.vcf \
+    >--cache \
+    >--dir_cache /home/ser/.vep \
+    >--species homo_sapiens \
+    >--assembly GRCh38 \
+    >--symbol \
+    >--canonical \
+    >--protein \
+    >--af \
+    >--sift b \
+    >--polyphen b \
+    >--mane \
+    >--vcf \
+    >--force_overwrite
+
+
+Explanation:
+
+In this step, VEP (Variant Effect Predictor) is used to annotate the final VCF file with detailed information about the functional consequences of the variants.
+
+--cache: Uses a local cache to speed up the annotation process.
+
+--species homo_sapiens: Specifies that the annotations are for human variants.
+
+--assembly GRCh38: Specifies the reference genome version (GRCh38).
+
+--symbol: Includes gene symbols in the annotation output.
+
+--canonical: Selects the canonical transcript for each gene.
+
+--protein: Includes protein information like protein domains and functional effects.
+
+--af: Adds allele frequency data to the annotations.
+
+--sift b and --polyphen b: These options use SIFT and PolyPhen to predict the impact of the variants on protein function (b = both prediction scores).
+
+--mane: Includes MANE (Mutant Allele-specific Nucleotide Environment) annotations for transcript accuracy.
+
+--vcf: Outputs the results in VCF format.
+
+--force_overwrite: Overwrites the output file if it already exists.
+
+The output (SRR13018652.annotated.vcf) contains the annotated variants, providing detailed information on their functional impact.
+
+Step 21: Create Breast Cancer Genes List
+
+>cat > /home/ser/1/breast_cancer_genes.txt << 'EOF'
+>BRCA1
+>BRCA2
+>TP53
+>PTEN
+>PIK3CA
+>AKT1
+>ESR1
+>ERBB2
+>CDH1
+>STK11
+>PALB2
+>CHEK2
+>ATM
+>BRIP1
+>EOF
+
+Explanation:
+
+This step creates a text file (breast_cancer_genes.txt) containing a list of known breast cancer-related genes. These genes are selected because mutations in them are known to be associated with breast cancer.
+
+The list includes key tumor suppressor genes (e.g., BRCA1, BRCA2) and oncogenes (e.g., PIK3CA, AKT1).
+
+This list will later be used to filter variants to focus specifically on mutations in breast cancer-related genes.
+

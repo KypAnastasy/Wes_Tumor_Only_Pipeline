@@ -308,7 +308,7 @@ The output (SRR13018652.annotated.vcf) contains the annotated variants, providin
 
 Step 21: Create Breast Cancer Genes List
 
->cat > /home/ser/1/breast_cancer_genes.txt << 'EOF'
+>cat > /home/1/breast_cancer_genes.txt << 'EOF'
 >BRCA1
 >BRCA2
 >TP53

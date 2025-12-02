@@ -750,3 +750,750 @@ Final Results Path:
 
 The results can be found in the /home/1/final_results/ directory, and the clinical report can be accessed at /home/1/final_results/02_reports/final_clinical_report.md.
 EOF
+
+## **README (Русский)**
+
+### Обзор проекта
+Тумор-Онли WES Анализ для Рака Молочной Железы
+
+Описание
+Этот репозиторий содержит полный пиплайн для анализа всего экзома (WES) в режиме "тумор-онли" (анализ только опухоли), специально разработанный для рака молочной железы. Пиплайн включает несколько этапов, начиная с загрузки необработанных данных и заканчивая генерацией клинического отчета.
+
+В анализе используются такие инструменты, как GATK, BWA-MEM2, bcftools, VEP и другие, для обработки необработанных NGS-данных, вызова мутаций и предоставления клинически значимых результатов.
+
+Как запустить пиплайн
+
+Предварительные требования
+
+Перед запуском пиплайна убедитесь, что у вас установлены следующие инструменты:
+- `GATK`
+- `BWA-MEM2`
+- `bcftools`
+- `VEP`
+- `samtools`
+- `fastp`
+- `fastqc`
+- `python3` (опционально, если нужны кастомные скрипты)
+
+Step 1: Download data from SRA
+
+>prefetch SRP291993
+
+Step 2: Convert SRA to FASTQ Format
+
+>fastq-dump --split-files --gzip ~/1/SRR13018652.sra
+
+Explanation:
+Converts the SRA file (from Step 1) into FASTQ format. The --split-files flag ensures that paired-end data is separated into two files. The --gzip flag compresses the output files to save space.
+
+Step 3: Decompress the FASTQ Files
+
+>gunzip ~/1/SRR13018652_1.fastq.gz
+
+>gunzip ~/1/SRR13018652_2.fastq.gz
+
+Explanation:
+Decompress the gzipped FASTQ files so they can be used in the next steps. The two FASTQ files correspond to the paired-end reads.
+
+Step 4: Quality Control (QC) Before Trimming
+
+>fastqc ~/1/SRR13018652_1.fastq ~/1/SRR13018652_2.fastq -o ~/1/fastqc_reports
+
+Explanation:
+Runs FastQC on the raw FASTQ files to assess their quality. This generates an HTML report which gives a visual summary of the sequencing quality and identifies any issues, such as low-quality reads or adapter contamination.
+
+Step 5: Trim Low-Quality Bases Using fastp
+
+>fastp \
+ >-i ~/1/SRR13018652_1.fastq \
+  >-I ~/1/SRR13018652_2.fastq \
+  >-o ~/1/SRR13018652_1.trim.fastq \
+  >-O ~/1/SRR13018652_2.trim.fastq \
+  >--detect_adapter_for_pe \
+  >--trim_poly_g \
+  >--cut_front \
+  >--cut_tail \
+  >--cut_mean_quality 20 \
+  >--length_required 30 \
+  >--html ~/1/fastp_report.html \
+  >--json ~/1/fastp_report.json
+
+Explanation:
+This command runs fastp, a tool for quality control and trimming. It:
+Removes adapter sequences from the paired-end reads.
+Trims low-quality bases from the beginning and end of the reads.
+Ensures that reads have a minimum length of 30 bases and a mean quality score above 20.
+The resulting trimmed FASTQ files are saved in the specified output files.
+
+Step 6: QC After Trimming
+
+>fastqc ~/1/SRR13018652_1.trim.fastq ~/1/SRR13018652_2.trim.fastq -o ~/1/fastqc_reports
+
+Explanation:
+Runs FastQC again on the trimmed FASTQ files to ensure that the trimming process did not introduce any problems. This step provides insight into how effective the trimming process was.
+
+Step 7: Align Reads to the Reference Genome Using BWA-MEM2
+
+>bwa-mem2 mem -t 16 \
+  >-R '@RG\tID:SRR13018652\tSM:SRR13018652\tPL:ILLUMINA' \
+  >~/hg38.fa \
+  >~/1/SRR13018652_1.trim.fastq \
+  >~/1/SRR13018652_2.trim.fastq \
+
+Explanation:
+Aligns the trimmed reads to the hg38 reference genome using BWA-MEM2. The -t 16 flag uses 16 threads to speed up the alignment process, and the -R flag specifies read group information (important for downstream analysis).
+
+Step 8: Sort BAM File by Coordinate
+  
+>~/1/SRR13018652.sam
+
+Explanation:
+Aligns the trimmed reads to the hg38 reference genome using BWA-MEM2. The -t 16 flag uses 16 threads to speed up the alignment process, and the -R flag specifies read group information (important for downstream analysis).
+
+Step 9: Mark Duplicates
+>gatk MarkDuplicates \
+  >-I ~/1/SRR13018652.sorted.bam \
+  >-O ~/1/SRR13018652.dedup.bam \
+  >-M ~/1/SRR13018652.metrics.txt
+Explanation:
+Marks duplicate reads in the aligned BAM file using GATK MarkDuplicates. Duplicate reads are typically artifacts of the sequencing process and should be removed to avoid false variant calls.
+
+Step 10: Index BAM File
+
+>samtools index ~/1/SRR13018652.dedup.bam
+
+Explanation:
+Indexes the deduplicated BAM file. BAM files need to be indexed for efficient access during variant calling.
+
+Step 11: BaseRecalibrator (Base Quality Score Recalibration)
+
+>gatk BaseRecalibrator \
+  >-I ~/1/SRR13018652.dedup.bam \
+  >-R hg38.fa \
+  >--known-sites Homo_sapiens_assembly38.dbsnp138.vcf.gz \
+  >--known-sites Mills_and_1000G_gold_standard.indels.hg38.vcf.gz \
+  >-O SRR13018652.recal.table
+
+Explanation:
+This step uses GATK BaseRecalibrator to perform base quality score recalibration (BQSR). The purpose of BQSR is to adjust the base quality scores in the sequencing data to account for systematic errors caused by the sequencing technology. This improves the accuracy of variant calling later in the pipeline.
+
+--known-sites: This option provides known variant sites (such as SNPs and indels) from databases like dbSNP and Mills, which are used to recalibrate the base quality scores.
+
+-O SRR13018652.recal.table: This produces an output recalibration table (SRR13018652.recal.table) that will be used in the next step to adjust the base quality scores in the BAM file.
+
+Step 12: Apply Base Quality Score Recalibration (BQSR)
+
+>gatk ApplyBQSR \
+  >-R hg38.fa \
+  >-I ~/1/SRR13018652.dedup.bam \
+  >--bqsr-recal-file SRR13018652.recal.table \
+  >-O SRR13018652.recal.bam
+>
+Explanation:
+In this step, GATK ApplyBQSR applies the recalibrated base quality scores to the deduplicated BAM file, which was produced in Step 9. This helps improve variant calling accuracy by correcting systematic biases in the base quality scores.
+
+--bqsr-recal-file SRR13018652.recal.table: This option applies the recalibration table (SRR13018652.recal.table) generated in the previous step.
+
+-O SRR13018652.recal.bam: This produces a new BAM file (SRR13018652.recal.bam) with the adjusted base quality scores, ready for variant calling.
+
+Step 13: Mutect2 (Somatic Variant Calling)
+
+>gatk Mutect2 \
+  >-R hg38.fa \
+  >-I ~/1/SRR13018652.recal.bam \
+  -tumor SRR13018652 \
+  >--germline-resource af-only-gnomad.hg38.vcf.gz \
+  >--f1r2-tar-gz ~/1/SRR13018652.f1r2.tar.gz \
+  >-O ~/1/SRR13018652.unfiltered.vcf.gz
+
+Explanation:
+
+Here, GATK Mutect2 is used to call somatic variants in the tumor sample in tumor-only mode. The tool identifies mutations specific to the tumor, such as single nucleotide variants (SNVs) and indels.
+
+--germline-resource af-only-gnomad.hg38.vcf.gz: This provides the germline variant resource to differentiate somatic mutations from normal variants.
+
+--f1r2-tar-gz ~/1/SRR13018652.f1r2.tar.gz: This option provides the F1R2 files, which are used for orientation bias correction.
+
+The output file (SRR13018652.unfiltered.vcf.gz) contains all the variants identified by Mutect2, but these have not yet been filtered.
+
+Step 14: Learn Read Orientation Model
+
+>gatk LearnReadOrientationModel \
+  >-I ~/1/SRR13018652.f1r2.tar.gz \
+  >-O ~/1/SRR13018652.read-orientation-model.tar.gz
+
+Explanation:
+
+This step trains a read orientation model using the F1R2 files. These files are essential for detecting and correcting read orientation biases that can occur during sequencing, which could lead to incorrect variant calls.
+
+-O ~/1/SRR13018652.read-orientation-model.tar.gz: The model is saved to the specified output file (read-orientation-model.tar.gz), which will be used later for filtering variants in the next steps.
+
+Step 15: GetPileupSummaries (Contamination Estimation)
+>gatk GetPileupSummaries \
+  >-I ~/1/SRR13018652.recal.bam \
+  >-V af-only-gnomad.hg38.vcf.gz \
+  >-L af-only-gnomad.hg38.vcf.gz \
+  >-O ~/1/SRR13018652.pileups.table
+
+Explanation:
+
+This step calculates pileup summaries using GATK GetPileupSummaries, which estimates the contamination in the tumor sample. Tumor samples can be contaminated with normal cells, which could affect variant calling. This step helps assess the level of normal cell contamination in the sample.
+
+-V af-only-gnomad.hg38.vcf.gz: The known variant sites from the gnomAD database are used to help estimate contamination levels.
+
+-O ~/1/SRR13018652.pileups.table: The output file (pileups.table) contains the contamination estimates that will be used for variant filtering in the next steps.
+
+Step 16: Calculate Contamination
+
+>gatk CalculateContamination \
+  >-I ~/1/SRR13018652.pileups.table \
+  >-O ~/1/SRR13018652.contamination.table \
+  >--tumor-segmentation ~/1/SRR13018652.segments.table
+
+Explanation:
+
+In this step, GATK CalculateContamination computes the contamination level of the tumor sample using the pileup summary table generated in the previous step. The contamination table is essential for filtering out variants that may be due to contamination with normal cells.
+
+-O ~/1/SRR13018652.contamination.table: This generates the contamination table (contamination.table), which will be used in the next step for filtering variants.
+
+--tumor-segmentation ~/1/SRR13018652.segments.table: This provides the segmentation information of the tumor, which is necessary for accurate contamination estimation.
+
+Step 17: FilterMutectCalls (Variant Filtering)
+
+>gatk FilterMutectCalls \
+  >-V ~/1/SRR13018652.unfiltered.vcf.gz \
+  >-R hg38.fa \
+  >--contamination-table ~/1/SRR13018652.contamination.table \
+  >--tumor-segmentation ~/1/SRR13018652.segments.table \
+  >--ob-priors ~/1/SRR13018652.read-orientation-model.tar.gz \
+ > -O ~/1/SRR13018652.filtered.vcf.gz
+
+Explanation:
+
+This step uses GATK FilterMutectCalls to filter the variants that were called in Step 13 (SRR13018652.unfiltered.vcf.gz). The filtering is based on several criteria, including contamination levels, read orientation biases, and tumor segmentation.
+
+--contamination-table ~/1/SRR13018652.contamination.table: The contamination information is applied here to correct for possible contamination from normal cells.
+
+--ob-priors ~/1/SRR13018652.read-orientation-model.tar.gz: The orientation bias model is applied for further filtering of variants.
+
+The output file (SRR13018652.filtered.vcf.gz) contains the filtered variants.
+
+Step 18: Hard Filtering (Apply Custom Filters)
+
+>bcftools filter -i \
+  >'FORMAT/DP>=20 && FORMAT/AD[0:1]>=5 && (FORMAT/AD[0:1]/(FORMAT/AD[0:0]+FORMAT/AD[0:1]))>=0.05 && FILTER="PASS"' \
+  >~/1/SRR13018652.filtered.vcf.gz \
+  >-Oz -o ~/1/SRR13018652.final.vcf.gz
+
+Explanation:
+
+This step uses bcftools to apply hard filters on the variants. The filters are based on criteria such as:
+
+Depth of coverage (DP),
+
+Allelic depth (AD),
+
+Allele frequency (AF).
+
+The result is a highly filtered VCF file (SRR13018652.final.vcf.gz) with variants that meet all the specified criteria.
+
+Step 19: Decompress Final VCF File
+
+>gunzip -c /home/1/SRR13018652.final.vcf.gz > /home/1/SRR13018652.final.vcf
+
+Explanation:
+
+This step decompresses the final VCF file, making it available as a standard text file (SRR13018652.final.vcf) for further analysis or visualization.
+
+Step 20: VEP Annotation (Variant Effect Predictor)
+
+>vep -i ~/1/SRR13018652.final.vcf \
+    >-o ~/1/SRR13018652.annotated.vcf \
+    >--cache \
+    >--dir_cache /home/.vep \
+    >--species homo_sapiens \
+    >--assembly GRCh38 \
+    >--symbol \
+    >--canonical \
+    >--protein \
+    >--af \
+    >--sift b \
+    >--polyphen b \
+    >--mane \
+    >--vcf \
+    >--force_overwrite
+
+
+Explanation:
+
+In this step, VEP (Variant Effect Predictor) is used to annotate the final VCF file with detailed information about the functional consequences of the variants.
+
+--cache: Uses a local cache to speed up the annotation process.
+
+--species homo_sapiens: Specifies that the annotations are for human variants.
+
+--assembly GRCh38: Specifies the reference genome version (GRCh38).
+
+--symbol: Includes gene symbols in the annotation output.
+
+--canonical: Selects the canonical transcript for each gene.
+
+--protein: Includes protein information like protein domains and functional effects.
+
+--af: Adds allele frequency data to the annotations.
+
+--sift b and --polyphen b: These options use SIFT and PolyPhen to predict the impact of the variants on protein function (b = both prediction scores).
+
+--mane: Includes MANE (Mutant Allele-specific Nucleotide Environment) annotations for transcript accuracy.
+
+--vcf: Outputs the results in VCF format.
+
+--force_overwrite: Overwrites the output file if it already exists.
+
+The output (SRR13018652.annotated.vcf) contains the annotated variants, providing detailed information on their functional impact.
+
+Step 21: Create Breast Cancer Genes List
+
+>cat > /home/1/breast_cancer_genes.txt << 'EOF'
+>BRCA1
+>BRCA2
+>TP53
+>PTEN
+>PIK3CA
+>AKT1
+>ESR1
+>ERBB2
+>CDH1
+>STK11
+>PALB2
+>CHEK2
+>ATM
+>BRIP1
+>EOF
+
+Explanation:
+
+This step creates a text file (breast_cancer_genes.txt) containing a list of known breast cancer-related genes. These genes are selected because mutations in them are known to be associated with breast cancer.
+
+The list includes key tumor suppressor genes (e.g., BRCA1, BRCA2) and oncogenes (e.g., PIK3CA, AKT1).
+
+This list will later be used to filter variants to focus specifically on mutations in breast cancer-related genes.
+
+Step 22: Filter Variants in Breast Cancer Genes
+
+>bcftools view -h /home/1/SRR13018652.annotated.vcf > /home/1/header.vcf
+
+>bcftools view -H /home/1/SRR13018652.annotated.vcf | \
+  >grep -E "$(paste -s -d '|' /home/1/breast_cancer_genes.txt)" | \
+  >cat /home/1/header.vcf - > /home/1/SRR13018652.breast_cancer_genes.vcf
+
+Explanation:
+
+This step filters the annotated variants to retain only those in the genes listed in breast_cancer_genes.txt.
+
+The first command (bcftools view -h) extracts the header from the VCF file and saves it to header.vcf.
+
+The second command filters the variants using grep and the gene list (breast_cancer_genes.txt), and then merges the header with the filtered variants.
+
+The final result is stored in SRR13018652.breast_cancer_genes.vcf, which contains only variants in breast cancer-related genes.
+
+Step 23: Analyze Results (Variant Count and Distribution by Gene)
+
+>echo "Total variants in breast cancer genes:"
+>grep -v "^#" /home/1/SRR13018652.breast_cancer_genes.vcf | wc -l
+
+>echo "Distribution by genes:"
+>grep -v "^#" /home/1/SRR13018652.breast_cancer_genes.vcf | \
+  >grep -o "CSQ=[^;]*" | \
+  >tr ',' '\n' | \
+  >cut -d'|' -f4 | \
+  >sort | uniq -c | sort -nr
+
+Explanation:
+
+This step provides an analysis of the variants in the breast cancer-related genes:
+
+Total Variants: It counts the total number of variants in the filtered VCF (SRR13018652.breast_cancer_genes.vcf), excluding comment lines (lines starting with #).
+
+Distribution by Gene: It analyzes the distribution of the variants across the genes:
+
+grep -o "CSQ=[^;]*" extracts the Consequence Annotation (CSQ) field from the VCF.
+
+cut -d'|' -f4 extracts the gene symbol from the CSQ field.
+
+sort | uniq -c | sort -nr counts the occurrences of each gene and sorts them in descending order.
+
+Step 24: Extract Key Mutation Details
+
+>echo "Detailed variants information:"
+>grep -v "^#" /home/1/SRR13018652.breast_cancer_genes.vcf | \
+  >awk -F'\t' '{
+    >printf "%-10s %-10s %-15s", $1, $2, $4 ">" $5;
+    >if ($8 ~ /CSQ=/) {
+      >split($8, info, ";");
+      >for (i in info) {
+        >if (info[i] ~ /^CSQ=/) {
+          >split(info[i], csq, "|");
+          >printf " %s (%s)", csq[4], csq[2];
+        >}
+      >}
+    >}
+    >print "";
+  >}'
+
+
+Explanation:
+
+This step extracts detailed information about each key mutation:
+
+It processes each variant line from SRR13018652.breast_cancer_genes.vcf, extracting details such as:
+
+Chromosome ($1),
+
+Position ($2),
+
+Reference and alternate alleles ($4 and $5).
+
+It also includes the Consequence Annotation (CSQ), which provides information on the gene symbol, mutation type, and the functional effect (e.g., missense, frameshift).
+
+The output displays these details in a readable format.
+
+Step 25: Determine Patient Sex
+
+>echo "Determining patient sex:"
+>y_reads=$(samtools idxstats /home/1/SRR13018652.recal.bam | awk '$1 == "chrY" {print $3}')
+>echo "Y chromosome reads: $y_reads"
+
+>if [ "$y_reads" -gt 1000 ]; then
+    >echo "PATIENT SEX: MALE"
+    >sex="MALE"
+>else
+    >echo "PATIENT SEX: FEMALE"
+    >sex="FEMALE"
+>fi
+
+Explanation:
+
+This step determines the biological sex of the patient based on the presence of Y chromosome reads in the BAM file:
+
+samtools idxstats provides statistics about the reference chromosomes in the BAM file.
+
+The script checks the number of reads aligned to the Y chromosome (chrY):
+
+If the number of Y chromosome reads is greater than 1000, the patient is classified as male.
+
+Otherwise, the patient is classified as female.
+
+The determined sex (MALE or FEMALE) is stored in the sex variable.
+
+Step 26: Detailed Analysis of Key Mutations
+
+cat > /home/1/analyze_key_mutations.sh << 'EOF'
+#!/bin/bash
+
+echo "Detailed analysis of key mutations"
+
+mutations=("chr17 7676154" "chr17 43063913" "chr3 179218303")
+
+for mutation in "${mutations[@]}"; do
+    IFS=" " read -r chrom pos <<< "$mutation"
+    
+    echo ""
+    echo "Analyzing mutation: $chrom $pos"
+    echo "------------------------"
+    
+    variant_line=$(awk -v chrom="$chrom" -v pos="$pos" '$1 == chrom && $2 == pos' /home/ser/1/SRR13018652.breast_cancer_genes.vcf)
+    
+    if [ -n "$variant_line" ]; then
+        chrom=$(echo "$variant_line" | awk '{print $1}')
+        pos=$(echo "$variant_line" | awk '{print $2}')
+        ref=$(echo "$variant_line" | awk '{print $4}')
+        alt=$(echo "$variant_line" | awk '{print $5}')
+        qual=$(echo "$variant_line" | awk '{print $6}')
+        filter=$(echo "$variant_line" | awk '{print $7}')
+        info=$(echo "$variant_line" | awk '{print $8}')
+        sample=$(echo "$variant_line" | awk '{print $10}')
+        
+        csq_info=$(echo "$variant_line" | grep -o "CSQ=[^;]*")
+        first_csq=$(echo "$csq_info" | cut -d',' -f1)
+        
+        symbol=$(echo "$first_csq" | cut -d'|' -f4)
+        consequence=$(echo "$first_csq" | cut -d'|' -f2)
+        impact=$(echo "$first_csq" | cut -d'|' -f3)
+        protein_change=$(echo "$first_csq" | cut -d'|' -f11)
+        amino_acids=$(echo "$first_csq" | cut -d'|' -f12)
+        
+        echo "Gene: $symbol"
+        echo "Change: $ref -> $alt" 
+        echo "Type: $consequence"
+        echo "Impact: $impact"
+        if [ -n "$protein_change" ] && [ "$protein_change" != "" ]; then
+            echo "Protein change: $protein_change"
+        fi
+        if [ -n "$amino_acids" ] && [ "$amino_acids" != "" ]; then
+            echo "Amino acids: $amino_acids"
+        fi
+        echo "Filter: $filter"
+        echo "Quality: $qual"
+        
+        dp=$(echo "$info" | grep -o "DP=[0-9]*" | cut -d'=' -f2)
+        af=$(echo "$info" | grep -o "AF=[0-9.]*" | cut -d'=' -f2)
+        tlod=$(echo "$info" | grep -o "TLOD=[0-9.]*" | cut -d'=' -f2)
+        
+        echo "Depth (INFO): $dp"
+        echo "Allele frequency (INFO): $af"
+        if [ -n "$tlod" ]; then
+            echo "Tumor LOD: $tlod"
+        fi
+        
+        gt=$(echo "$sample" | cut -d':' -f1)
+        ad=$(echo "$sample" | cut -d':' -f2)
+        sample_af=$(echo "$sample" | cut -d':' -f3)
+        sample_dp=$(echo "$sample" | cut -d':' -f4)
+        
+        echo "Genotype: $gt"
+        echo "Allelic Depths (AD): $ad"
+        echo "Allele frequency (FORMAT): $sample_af"
+        echo "Depth (FORMAT): $sample_dp"
+        
+        ref_count=$(echo "$ad" | cut -d',' -f1)
+        alt_count=$(echo "$ad" | cut -d',' -f2)
+        if [ -n "$ref_count" ] && [ -n "$alt_count" ] && [ "$ref_count" -gt 0 ]; then
+            vaf=$(echo "scale=4; $alt_count / ($ref_count + $alt_count)" | bc)
+            echo "VAF (calculated): $vaf"
+        fi
+        
+        echo ""
+        echo "Additional information:"
+        echo "$info" | tr ';' '\n' | grep -E "^(DP|AF|TLOD|MBQ|MMQ|MPOS)="
+        
+    else
+        echo "Mutation $chrom $pos not found"
+    fi
+    echo ""
+done
+
+EOF
+
+chmod +x /home/1/analyze_key_mutations.sh
+/home/1/analyze_key_mutations.sh > /home/1/key_mutations_detailed_analysis.txt
+
+
+Explanation:
+
+This script performs a detailed analysis of specific key mutations in the breast cancer-related genes list. It examines specific mutations (given by chromosome and position) and extracts detailed variant information such as:
+
+Gene symbol, type, and impact of mutation.
+
+Genotype and depth of sequencing (AD, DP, AF).
+
+Variant allele frequency (VAF).
+
+Additional details like tumor log odds (TLOD), depth (DP), and allele frequency (AF) from the INFO field.
+
+After running the script, the output is saved in key_mutations_detailed_analysis.txt.
+
+Step 27: Create Final Clinical Report
+
+>cat > /home/ser/1/final_clinical_report.md << EOF
+># GENOMIC ANALYSIS REPORT
+>## Whole Exome Sequencing - Tumor Only Analysis
+
+>### PATIENT INFORMATION
+>- Sample ID: SRR13018652
+>- Biological Sex: $sex
+>- Analysis Date: $(date +"%Y-%m-%d")
+
+>### EXECUTIVE SUMMARY
+>Whole exome sequencing identified three clinically significant mutations in key cancer genes.
+
+>### KEY MUTATIONS IDENTIFIED
+
+>#### 1. TP53 Mutation
+>- Location: chr17:7676154
+>- Variant: G>C (Missense)
+>- VAF: 8.9%
+
+>#### 2. BRCA1 Mutation
+>- Location: chr17:43063913
+>- Variant: G>C (Missense) 
+>- VAF: 15.1%
+
+>#### 3. PIK3CA Mutation
+>- Location: chr3:179218303
+>- Variant: G>A (Missense)
+>- VAF: 36.9%
+
+>### CLINICAL RECOMMENDATIONS
+
+>#### Genetic Counseling & Testing
+>1. Confirm germline status of BRCA1 mutation
+>2. Family member testing recommended
+>3. Discuss reproductive implications
+
+>#### Cancer Surveillance
+>1. Enhanced breast cancer screening
+>2. $([ "$sex" = "MALE" ] && echo "Prostate cancer screening starting at age 40")
+>3. Consider pancreatic cancer screening
+
+>#### Therapeutic Considerations
+>1. PARP inhibitors for BRCA1-related cancers
+>2. PI3K inhibitors for PIK3CA-mutated cancers
+>3. Clinical trial eligibility assessment
+
+>### METHODS
+>- Sequencing Technology: Whole Exome Sequencing
+>- Reference Genome: hg38
+>- Variant Caller: GATK Mutect2 (tumor-only mode)
+>- Annotation: Ensembl VEP
+
+>### LIMITATIONS
+>- Tumor-only analysis without matched normal
+- Germline vs somatic status undetermined
+>>- Functional validation required for missense variants
+
+>Analysis completed: $(date)
+>EOF
+
+Explanation:
+
+This step creates a clinical report in markdown format. The report includes:
+
+Patient Information: Sample ID and biological sex.
+
+Executive Summary: A brief overview of the key mutations found in the analysis (e.g., TP53, BRCA1, PIK3CA).
+
+Clinical Recommendations: Suggestions for genetic counseling, cancer surveillance, and possible therapeutic considerations based on the detected mutations.
+
+Methods: Details on the sequencing technology, reference genome, variant caller, and annotation methods used in the analysis.
+
+Limitations: Acknowledgement of the limitations of the analysis, such as the tumor-only approach without a matched normal sample.
+
+The clinical report is saved as final_clinical_report.md.
+
+Step 28: Prostate Cancer Analysis for Male Patients
+
+>if [ "$sex" = "MALE" ]; then
+    >cat > /home/1/prostate_cancer_genes.txt << 'EOF'
+>BRCA1
+>BRCA2
+>ATM
+>CHEK2
+>TP53
+>HOXB13
+>MLH1
+>MSH2
+>MSH6
+>PMS2
+>EOF
+
+    >bcftools view -h /home/1/SRR13018652.annotated.vcf > /home/1/header_prostate.vcf
+    
+    >bcftools view -H /home/1/SRR13018652.annotated.vcf | \
+      >grep -E "$(paste -s -d '|' /home/1/prostate_cancer_genes.txt)" | \
+      >cat /home1/header_prostate.vcf - > /home/1/SRR13018652.prostate_cancer_genes.vcf
+
+    >prostate_variants=$(grep -v "^#" /home/1/SRR13018652.prostate_cancer_genes.vcf | wc -l)
+    >echo "Variants in prostate cancer genes: $prostate_variants"
+    
+    >echo "" >> /home/1/final_clinical_report.md
+    >echo "### PROSTATE CANCER RISK ASSESSMENT" >> /home/1/final_clinical_report.md
+    >echo "Based on BRCA1 and TP53 mutations:" >> /home/1/final_clinical_report.md
+    >echo "- Lifetime prostate cancer risk: 20-25%" >> /home/1/final_clinical_report.md
+    >echo "- Consider PSA screening starting at age 40" >> /home/1/final_clinical_report.md
+>fi
+
+Explanation:
+This step checks if the patient is male and, if so, analyzes prostate cancer-related mutations (in genes like BRCA1, TP53, etc.). It adds information about prostate cancer risk and screening recommendations to the final clinical report.
+
+Step 29: Create Results Summary Table
+
+>cat > /home/1/results_summary.csv << EOF
+>Category,Value
+>Sample_ID,SRR13018652
+>Patient_Sex,$sex
+>Total_Variants,$(grep -v "^#" /home/1/SRR13018652.final.vcf | wc -l)
+>Breast_Cancer_Gene_Variants,$(grep -v "^#" /home/1/SRR13018652.breast_cancer_genes.vcf | wc -l)
+Key_Driver_Mutations,3
+>TP53_VAF,0.089
+>BRCA1_VAF,0.151
+>PIK3CA_VAF,0.369
+>Analysis_Date,$(date +"%Y-%m-%d")
+
+Explanation:
+
+Create a CSV file summarizing the analysis results:
+
+This step generates a summary table in CSV format, which includes key metrics such as:
+
+Sample ID (SRR13018652).
+
+Patient sex ($sex).
+
+The total number of variants found in the final VCF (Total_Variants).
+
+The number of variants found in breast cancer genes (Breast_Cancer_Gene_Variants).
+
+The count of key driver mutations (hardcoded to 3 in this case).
+
+Variant Allele Frequencies (VAF) for TP53, BRCA1, and PIK3CA mutations.
+
+The date of analysis.
+
+Dynamic Variables:
+
+The table pulls dynamic data such as variant counts and analysis date by running commands within the $(...) syntax (e.g., counting the lines in the VCF files for total variants).
+
+File Created:
+
+A file results_summary.csv is created to provide a quick overview of the analysis results.
+
+Step 30: Organize Final Results
+
+>mkdir -p /home/1/final_results/01_vcf_files
+>mkdir -p /home/1/final_results/02_reports
+>mkdir -p /home/1/final_results/03_quality_metrics
+
+>cp /home/1/SRR13018652.final.vcf /home/1/final_results/01_vcf_files/
+>cp /home/1/SRR13018652.annotated.vcf /home/1/final_results/01_vcf_files/
+>cp /home/1/SRR13018652.breast_cancer_genes.vcf /home/1/final_results/01_vcf_files/
+>[ "$sex" = "MALE" ] && cp /home/1/SRR13018652.prostate_cancer_genes.vcf /home/1/final_results/01_vcf_files/
+
+>cp /home/1/final_clinical_report.md /home/1/final_results/02_reports/
+>cp /home/1/results_summary.csv /home/1/final_results/02_reports/
+>cp /home/1/key_mutations_detailed_analysis.txt /home/1/final_results/02_reports/
+
+>cp -r /home/1/fastqc_reports /home/1/final_results/03_quality_metrics/
+>cp /home/1/fastp_report.html /home/1/final_results/03_quality_metrics/
+
+>echo "ANALYSIS COMPLETED"
+>echo "Results available in: /home/1/final_results/"
+>echo "Clinical report: /home/1/final_results/02_reports/final_clinical_report.md"
+
+Explanation:
+
+Create Directories for Final Results:
+
+mkdir -p /home/1/final_results/01_vcf_files creates a directory for VCF files.
+
+mkdir -p /home/1/final_results/02_reports creates a directory for reports.
+
+mkdir -p /home/1/final_results/03_quality_metrics creates a directory for quality metrics (QC).
+
+Organize Files into Proper Directories:
+
+VCF files: The final VCF files (final.vcf, annotated.vcf, breast_cancer_genes.vcf, and optionally, prostate_cancer_genes.vcf for male patients) are copied into the 01_vcf_files directory.
+
+Reports: The clinical report (final_clinical_report.md), results summary (results_summary.csv), and detailed mutations analysis (key_mutations_detailed_analysis.txt) are copied into the 02_reports directory.
+
+Quality Metrics: QC reports (fastqc_reports and fastp_report.html) are copied into the 03_quality_metrics directory.
+
+Completion Message:
+
+After organizing all the final results into the proper directories, the script prints a completion message with the paths to the results.
+
+Final Results Path:
+
+The results can be found in the /home/1/final_results/ directory, and the clinical report can be accessed at /home/1/final_results/02_reports/final_clinical_report.md.
+EOF
+

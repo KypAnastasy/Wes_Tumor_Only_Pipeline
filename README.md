@@ -775,34 +775,38 @@ EOF
 - `fastqc`
 - `python3` (опционально, если нужны кастомные скрипты)
 
-Step 1: Download data from SRA
+Шаг 1: Загрузка данных из SRA
 
 >prefetch SRP291993
 
-Step 2: Convert SRA to FASTQ Format
+Шаг 2: Конвертация SRA в формат FASTQ
 
 >fastq-dump --split-files --gzip ~/1/SRR13018652.sra
 
-Explanation:
-Converts the SRA file (from Step 1) into FASTQ format. The --split-files flag ensures that paired-end data is separated into two files. The --gzip flag compresses the output files to save space.
+Объяснение:
+Конвертирует файл SRA (из Шага 1) в формат FASTQ. Флаг --split-files гарантирует, что данные с парными ридами будут разделены на два файла. Флаг --gzip сжимает выходные файлы, чтобы сэкономить место.
 
-Step 3: Decompress the FASTQ Files
+Шаг 3: Объяснение:
+
+Конвертирует файл SRA (из Шага 1) в формат FASTQ. Флаг --split-files гарантирует, что данные с парными ридами будут разделены на два файла. Флаг --gzip сжимает выходные файлы, чтобы сэкономить место.
+
+Шаг 3: Распаковка файлов FASTQ
 
 >gunzip ~/1/SRR13018652_1.fastq.gz
 
 >gunzip ~/1/SRR13018652_2.fastq.gz
 
-Explanation:
-Decompress the gzipped FASTQ files so they can be used in the next steps. The two FASTQ files correspond to the paired-end reads.
+Объяснение:
+Распаковывает сжатые файлы FASTQ, чтобы они могли быть использованы на следующих шагах. Два файла FASTQ соответствуют парным ридам.
 
-Step 4: Quality Control (QC) Before Trimming
+Шаг 4: Контроль качества (QC) до тримминга (обрезки)
 
 >fastqc ~/1/SRR13018652_1.fastq ~/1/SRR13018652_2.fastq -o ~/1/fastqc_reports
 
-Explanation:
-Runs FastQC on the raw FASTQ files to assess their quality. This generates an HTML report which gives a visual summary of the sequencing quality and identifies any issues, such as low-quality reads or adapter contamination.
+Объяснение:
+Запускает FastQC на исходных файлах FASTQ для оценки их качества. Это генерирует HTML-отчет, который дает визуальное представление о качестве секвенирования и выявляет возможные проблемы, такие как низкокачественные риды или загрязнение адаптерами.
 
-Step 5: Trim Low-Quality Bases Using fastp
+Шаг 5: Обрезка низкокачественных оснований с помощью fastp
 
 >fastp \
  >-i ~/1/SRR13018652_1.fastq \
@@ -818,21 +822,25 @@ Step 5: Trim Low-Quality Bases Using fastp
   >--html ~/1/fastp_report.html \
   >--json ~/1/fastp_report.json
 
-Explanation:
-This command runs fastp, a tool for quality control and trimming. It:
-Removes adapter sequences from the paired-end reads.
-Trims low-quality bases from the beginning and end of the reads.
-Ensures that reads have a minimum length of 30 bases and a mean quality score above 20.
-The resulting trimmed FASTQ files are saved in the specified output files.
+Объяснение:
+Эта команда запускает fastp — инструмент для контроля качества и обрезки. Он:
 
-Step 6: QC After Trimming
+Удаляет последовательности адаптеров из парных ридов.
+
+Обрезает низкокачественные основания с начала и конца ридов.
+
+Обеспечивает, чтобы риды имели минимальную длину 30 оснований и средний балл качества выше 20.
+
+Результирующие обрезанные файлы FASTQ сохраняются в указанные выходные файлы.
+
+Шаг 6: Контроль качества (QC) после обрезки
 
 >fastqc ~/1/SRR13018652_1.trim.fastq ~/1/SRR13018652_2.trim.fastq -o ~/1/fastqc_reports
 
-Explanation:
-Runs FastQC again on the trimmed FASTQ files to ensure that the trimming process did not introduce any problems. This step provides insight into how effective the trimming process was.
+Объяснение:
+Снова запускает FastQC на обрезанных файлах FASTQ, чтобы убедиться, что процесс обрезки не привел к появлению проблем. Этот шаг дает представление о том, насколько эффективно была выполнена обрезка.
 
-Step 7: Align Reads to the Reference Genome Using BWA-MEM2
+Шаг 7: Выравнивание ридов с референсным геномом с помощью BWA-MEM2
 
 >bwa-mem2 mem -t 16 \
   >-R '@RG\tID:SRR13018652\tSM:SRR13018652\tPL:ILLUMINA' \
@@ -840,32 +848,34 @@ Step 7: Align Reads to the Reference Genome Using BWA-MEM2
   >~/1/SRR13018652_1.trim.fastq \
   >~/1/SRR13018652_2.trim.fastq \
 
-Explanation:
-Aligns the trimmed reads to the hg38 reference genome using BWA-MEM2. The -t 16 flag uses 16 threads to speed up the alignment process, and the -R flag specifies read group information (important for downstream analysis).
+Объяснение:
+Выравнивает обрезанные риды с референсным геномом hg38 с использованием BWA-MEM2. Флаг -t 16 использует 16 потоков для ускорения процесса выравнивания, а флаг -R указывает информацию о группе ридов (что важно для дальнейшего анализа)
 
-Step 8: Sort BAM File by Coordinate
+Шаг 8: Сортировка BAM-файла по координатам
   
 >~/1/SRR13018652.sam
 
-Explanation:
-Aligns the trimmed reads to the hg38 reference genome using BWA-MEM2. The -t 16 flag uses 16 threads to speed up the alignment process, and the -R flag specifies read group information (important for downstream analysis).
+Объяснение:
+Сортирует BAM-файл по координатам, чтобы риды были упорядочены в соответствии с их положением на референсном геноме. Это важно для последующих шагов анализа, таких как выявление дубликатов и выравнивание.
 
-Step 9: Mark Duplicates
+Шаг 9: Отметка дубликатов
+
 >gatk MarkDuplicates \
   >-I ~/1/SRR13018652.sorted.bam \
   >-O ~/1/SRR13018652.dedup.bam \
   >-M ~/1/SRR13018652.metrics.txt
-Explanation:
-Marks duplicate reads in the aligned BAM file using GATK MarkDuplicates. Duplicate reads are typically artifacts of the sequencing process and should be removed to avoid false variant calls.
 
-Step 10: Index BAM File
+Объяснение:
+Отмечает дубликаты ридов в выровненном BAM-файле с помощью GATK MarkDuplicates. Дубликаты ридов обычно являются артефактами процесса секвенирования, и их следует удалить, чтобы избежать ложных вызовов вариантов.
+
+Шаг 10: Индексация BAM-файла
 
 >samtools index ~/1/SRR13018652.dedup.bam
 
-Explanation:
-Indexes the deduplicated BAM file. BAM files need to be indexed for efficient access during variant calling.
+Объяснение:
+Индексирует BAM-файл после удаления дубликатов. BAM-файлы должны быть проиндексированы для эффективного доступа при вызове вариантов.
 
-Step 11: BaseRecalibrator (Base Quality Score Recalibration)
+Шаг 11: BaseRecalibrator (Перекалибровка баллов качества оснований)
 
 >gatk BaseRecalibrator \
   >-I ~/1/SRR13018652.dedup.bam \
@@ -874,12 +884,12 @@ Step 11: BaseRecalibrator (Base Quality Score Recalibration)
   >--known-sites Mills_and_1000G_gold_standard.indels.hg38.vcf.gz \
   >-O SRR13018652.recal.table
 
-Explanation:
-This step uses GATK BaseRecalibrator to perform base quality score recalibration (BQSR). The purpose of BQSR is to adjust the base quality scores in the sequencing data to account for systematic errors caused by the sequencing technology. This improves the accuracy of variant calling later in the pipeline.
+Объяснение:
+Этот шаг использует GATK BaseRecalibrator для выполнения перекалибровки баллов качества оснований (BQSR). Цель BQSR — откорректировать баллы качества оснований в данных секвенирования, чтобы учесть систематические ошибки, вызванные технологией секвенирования. Это улучшает точность вызова вариантов на следующих этапах пайплайна.
 
---known-sites: This option provides known variant sites (such as SNPs and indels) from databases like dbSNP and Mills, which are used to recalibrate the base quality scores.
+--known-sites: Эта опция предоставляет известные участки вариантов (такие как SNP и инделы) из баз данных, таких как dbSNP и Mills, которые используются для перекалибровки баллов качества оснований.
 
--O SRR13018652.recal.table: This produces an output recalibration table (SRR13018652.recal.table) that will be used in the next step to adjust the base quality scores in the BAM file.
+-O SRR13018652.recal.table: Этот шаг генерирует выходной файл таблицы перекалибровки (SRR13018652.recal.table), который будет использован на следующем этапе для корректировки баллов качества оснований в BAM-файле.
 
 Step 12: Apply Base Quality Score Recalibration (BQSR)
 

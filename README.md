@@ -548,4 +548,79 @@ Additional details like tumor log odds (TLOD), depth (DP), and allele frequency 
 
 After running the script, the output is saved in key_mutations_detailed_analysis.txt.
 
+Step 27: Create Final Clinical Report
+cat > /home/ser/1/final_clinical_report.md << EOF
+# GENOMIC ANALYSIS REPORT
+## Whole Exome Sequencing - Tumor Only Analysis
 
+### PATIENT INFORMATION
+- Sample ID: SRR13018652
+- Biological Sex: $sex
+- Analysis Date: $(date +"%Y-%m-%d")
+
+### EXECUTIVE SUMMARY
+Whole exome sequencing identified three clinically significant mutations in key cancer genes.
+
+### KEY MUTATIONS IDENTIFIED
+
+#### 1. TP53 Mutation
+- Location: chr17:7676154
+- Variant: G>C (Missense)
+- VAF: 8.9%
+
+#### 2. BRCA1 Mutation
+- Location: chr17:43063913
+- Variant: G>C (Missense) 
+- VAF: 15.1%
+
+#### 3. PIK3CA Mutation
+- Location: chr3:179218303
+- Variant: G>A (Missense)
+- VAF: 36.9%
+
+### CLINICAL RECOMMENDATIONS
+
+#### Genetic Counseling & Testing
+1. Confirm germline status of BRCA1 mutation
+2. Family member testing recommended
+3. Discuss reproductive implications
+
+#### Cancer Surveillance
+1. Enhanced breast cancer screening
+2. $([ "$sex" = "MALE" ] && echo "Prostate cancer screening starting at age 40")
+3. Consider pancreatic cancer screening
+
+#### Therapeutic Considerations
+1. PARP inhibitors for BRCA1-related cancers
+2. PI3K inhibitors for PIK3CA-mutated cancers
+3. Clinical trial eligibility assessment
+
+### METHODS
+- Sequencing Technology: Whole Exome Sequencing
+- Reference Genome: hg38
+- Variant Caller: GATK Mutect2 (tumor-only mode)
+- Annotation: Ensembl VEP
+
+### LIMITATIONS
+- Tumor-only analysis without matched normal
+- Germline vs somatic status undetermined
+- Functional validation required for missense variants
+
+Analysis completed: $(date)
+EOF
+
+
+Explanation:
+This step creates a clinical report in markdown format. The report includes:
+
+Patient Information: Sample ID and biological sex.
+
+Executive Summary: A brief overview of the key mutations found in the analysis (e.g., TP53, BRCA1, PIK3CA).
+
+Clinical Recommendations: Suggestions for genetic counseling, cancer surveillance, and possible therapeutic considerations based on the detected mutations.
+
+Methods: Details on the sequencing technology, reference genome, variant caller, and annotation methods used in the analysis.
+
+Limitations: Acknowledgement of the limitations of the analysis, such as the tumor-only approach without a matched normal sample.
+
+The clinical report is saved as final_clinical_report.md.

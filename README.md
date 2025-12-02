@@ -891,7 +891,7 @@ EOF
 
 -O SRR13018652.recal.table: Этот шаг генерирует выходной файл таблицы перекалибровки (SRR13018652.recal.table), который будет использован на следующем этапе для корректировки баллов качества оснований в BAM-файле.
 
-Step 12: Apply Base Quality Score Recalibration (BQSR)
+Шаг 12: Применение повторной калибровки оценок качества оснований (BQSR)
 
 >gatk ApplyBQSR \
   >-R hg38.fa \
@@ -899,14 +899,14 @@ Step 12: Apply Base Quality Score Recalibration (BQSR)
   >--bqsr-recal-file SRR13018652.recal.table \
   >-O SRR13018652.recal.bam
 >
-Explanation:
-In this step, GATK ApplyBQSR applies the recalibrated base quality scores to the deduplicated BAM file, which was produced in Step 9. This helps improve variant calling accuracy by correcting systematic biases in the base quality scores.
+Объяснение:
+На этом шаге инструмент GATK ApplyBQSR применяет повторно откалиброванные оценки качества оснований к файлу BAM с удалёнными дубликатами, который был получен на Шаге 9. Это помогает повысить точность выявления вариантов (вариант-коллинга) за счёт корректировки систематических смещений в оценках качества оснований.
 
 --bqsr-recal-file SRR13018652.recal.table: This option applies the recalibration table (SRR13018652.recal.table) generated in the previous step.
 
 -O SRR13018652.recal.bam: This produces a new BAM file (SRR13018652.recal.bam) with the adjusted base quality scores, ready for variant calling.
 
-Step 13: Mutect2 (Somatic Variant Calling)
+Шаг 13: Mutect2 (вызов соматического варианта)
 
 >gatk Mutect2 \
   >-R hg38.fa \
@@ -916,9 +916,8 @@ Step 13: Mutect2 (Somatic Variant Calling)
   >--f1r2-tar-gz ~/1/SRR13018652.f1r2.tar.gz \
   >-O ~/1/SRR13018652.unfiltered.vcf.gz
 
-Explanation:
-
-Here, GATK Mutect2 is used to call somatic variants in the tumor sample in tumor-only mode. The tool identifies mutations specific to the tumor, such as single nucleotide variants (SNVs) and indels.
+Объяснение:
+В данном случае GATK Mutect2 используется для выявления соматических вариантов в образце опухоли в режиме «только опухоль». Инструмент выявляет мутации, специфичные для опухоли, такие как однонуклеотидные варианты (SNV) и инделы.
 
 --germline-resource af-only-gnomad.hg38.vcf.gz: This provides the germline variant resource to differentiate somatic mutations from normal variants.
 

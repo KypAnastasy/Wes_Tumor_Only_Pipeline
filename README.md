@@ -442,99 +442,96 @@ The determined sex (MALE or FEMALE) is stored in the sex variable.
 
 Step 26: Detailed Analysis of Key Mutations
 
->cat > /home/1/analyze_key_mutations.sh << 'EOF'
->#!/bin/bash
+cat > /home/1/analyze_key_mutations.sh << 'EOF'
+#!/bin/bash
 
->echo "Detailed analysis of key mutations"
+echo "Detailed analysis of key mutations"
 
->mutations=(
-    >"chr17 7676154"
-    >"chr17 43063913" 
-    >"chr3 179218303"
->)
+mutations=("chr17 7676154" "chr17 43063913" "chr3 179218303")
 
->for mutation in "${mutations[@]}"; do
-    >chrom=$(echo "$mutation" | awk '{print $1}')
-    >pos=$(echo "$mutation" | awk '{print $2}')
+for mutation in "${mutations[@]}"; do
+    chrom=$(echo "$mutation" | awk '{print $1}')
+    pos=$(echo "$mutation" | awk '{print $2}')
     
-    >echo ""
-    >echo "Analyzing mutation: $chrom $pos"
-    >echo "------------------------"
+    echo ""
+    echo "Analyzing mutation: $chrom $pos"
+    echo "------------------------"
     
-    >variant_line=$(awk -v chrom="$chrom" -v pos="$pos" '$1 == chrom && $2 == pos' /home/1/SRR13018652.breast_cancer_genes.vcf)
+    variant_line=$(awk -v chrom="$chrom" -v pos="$pos" '$1 == chrom && $2 == pos' /home/ser/1/SRR13018652.breast_cancer_genes.vcf)
     
-    >if [ -n "$variant_line" ]; then
-        >chrom=$(echo "$variant_line" | awk '{print $1}')
-        >pos=$(echo "$variant_line" | awk '{print $2}')
-        >ref=$(echo "$variant_line" | awk '{print $4}')
-        >alt=$(echo "$variant_line" | awk '{print $5}')
-        >qual=$(echo "$variant_line" | awk '{print $6}')
-        >filter=$(echo "$variant_line" | awk '{print $7}')
-        >info=$(echo "$variant_line" | awk '{print $8}')
-        >sample=$(echo "$variant_line" | awk '{print $10}')
+    if [ -n "$variant_line" ]; then
+        chrom=$(echo "$variant_line" | awk '{print $1}')
+        pos=$(echo "$variant_line" | awk '{print $2}')
+        ref=$(echo "$variant_line" | awk '{print $4}')
+        alt=$(echo "$variant_line" | awk '{print $5}')
+        qual=$(echo "$variant_line" | awk '{print $6}')
+        filter=$(echo "$variant_line" | awk '{print $7}')
+        info=$(echo "$variant_line" | awk '{print $8}')
+        sample=$(echo "$variant_line" | awk '{print $10}')
         
-        >csq_info=$(echo "$variant_line" | grep -o "CSQ=[^;]*")
-        >first_csq=$(echo "$csq_info" | cut -d',' -f1)
+        csq_info=$(echo "$variant_line" | grep -o "CSQ=[^;]*")
+        first_csq=$(echo "$csq_info" | cut -d',' -f1)
         
-        >symbol=$(echo "$first_csq" | cut -d'|' -f4)
-        >consequence=$(echo "$first_csq" | cut -d'|' -f2)
-        >impact=$(echo "$first_csq" | cut -d'|' -f3)
-        >protein_change=$(echo "$first_csq" | cut -d'|' -f11)
-        >amino_acids=$(echo "$first_csq" | cut -d'|' -f12)
+        symbol=$(echo "$first_csq" | cut -d'|' -f4)
+        consequence=$(echo "$first_csq" | cut -d'|' -f2)
+        impact=$(echo "$first_csq" | cut -d'|' -f3)
+        protein_change=$(echo "$first_csq" | cut -d'|' -f11)
+        amino_acids=$(echo "$first_csq" | cut -d'|' -f12)
         
-        >echo "Gene: $symbol"
-        >echo "Change: $ref -> $alt" 
-        >echo "Type: $consequence"
-        >echo "Impact: $impact"
-        >if [ -n "$protein_change" ] && [ "$protein_change" != "" ]; then
-            >echo "Protein change: $protein_change"
-        >fi
-        >if [ -n "$amino_acids" ] && [ "$amino_acids" != "" ]; then
-            >echo "Amino acids: $amino_acids"
-        >fi
-        >echo "Filter: $filter"
-        >echo "Quality: $qual"
+        echo "Gene: $symbol"
+        echo "Change: $ref -> $alt" 
+        echo "Type: $consequence"
+        echo "Impact: $impact"
+        if [ -n "$protein_change" ] && [ "$protein_change" != "" ]; then
+            echo "Protein change: $protein_change"
+        fi
+        if [ -n "$amino_acids" ] && [ "$amino_acids" != "" ]; then
+            echo "Amino acids: $amino_acids"
+        fi
+        echo "Filter: $filter"
+        echo "Quality: $qual"
         
-        >dp=$(echo "$info" | grep -o "DP=[0-9]*" | cut -d'=' -f2)
-        >af=$(echo "$info" | grep -o "AF=[0-9.]*" | cut -d'=' -f2)
-        >tlod=$(echo "$info" | grep -o "TLOD=[0-9.]*" | cut -d'=' -f2)
+        dp=$(echo "$info" | grep -o "DP=[0-9]*" | cut -d'=' -f2)
+        af=$(echo "$info" | grep -o "AF=[0-9.]*" | cut -d'=' -f2)
+        tlod=$(echo "$info" | grep -o "TLOD=[0-9.]*" | cut -d'=' -f2)
         
-        >echo "Depth (INFO): $dp"
-        >echo "Allele frequency (INFO): $af"
-        >if [ -n "$tlod" ]; then
-            >echo "Tumor LOD: $tlod"
-        >fi
+        echo "Depth (INFO): $dp"
+        echo "Allele frequency (INFO): $af"
+        if [ -n "$tlod" ]; then
+            echo "Tumor LOD: $tlod"
+        fi
         
-        >gt=$(echo "$sample" | cut -d':' -f1)
-        >ad=$(echo "$sample" | cut -d':' -f2)
-        >sample_af=$(echo "$sample" | cut -d':' -f3)
-        >sample_dp=$(echo "$sample" | cut -d':' -f4)
+        gt=$(echo "$sample" | cut -d':' -f1)
+        ad=$(echo "$sample" | cut -d':' -f2)
+        sample_af=$(echo "$sample" | cut -d':' -f3)
+        sample_dp=$(echo "$sample" | cut -d':' -f4)
         
-        >echo "Genotype: $gt"
-        >echo "Allelic Depths (AD): $ad"
-        >echo "Allele frequency (FORMAT): $sample_af"
-        >echo "Depth (FORMAT): $sample_dp"
+        echo "Genotype: $gt"
+        echo "Allelic Depths (AD): $ad"
+        echo "Allele frequency (FORMAT): $sample_af"
+        echo "Depth (FORMAT): $sample_dp"
         
-        >ref_count=$(echo "$ad" | cut -d',' -f1)
-        >alt_count=$(echo "$ad" | cut -d',' -f2)
-        >if [ -n "$ref_count" ] && [ -n "$alt_count" ] && [ "$ref_count" -gt 0 ]; then
-            >vaf=$(echo "scale=4; $alt_count / ($ref_count + $alt_count)" | bc)
-            >echo "VAF (calculated): $vaf"
-        >fi
+        ref_count=$(echo "$ad" | cut -d',' -f1)
+        alt_count=$(echo "$ad" | cut -d',' -f2)
+        if [ -n "$ref_count" ] && [ -n "$alt_count" ] && [ "$ref_count" -gt 0 ]; then
+            vaf=$(echo "scale=4; $alt_count / ($ref_count + $alt_count)" | bc)
+            echo "VAF (calculated): $vaf"
+        fi
         
-        >echo ""
-        >echo "Additional information:"
-        >echo "$info" | tr ';' '\n' | grep -E "^(DP|AF|TLOD|MBQ|MMQ|MPOS)="
+        echo ""
+        echo "Additional information:"
+        echo "$info" | tr ';' '\n' | grep -E "^(DP|AF|TLOD|MBQ|MMQ|MPOS)="
         
-    >else
-        >echo "Mutation $chrom $pos not found"
-    >fi
-    >echo ""
->done
->EOF
+    else
+        echo "Mutation $chrom $pos not found"
+    fi
+    echo ""
+done
 
->chmod +x /home/1/analyze_key_mutations.sh
->/home/1/analyze_key_mutations.sh > /home/1/key_mutations_detailed_analysis.txt
+EOF
+
+chmod +x /home/1/analyze_key_mutations.sh
+/home/1/analyze_key_mutations.sh > /home/1/key_mutations_detailed_analysis.txt
 
 
 Explanation:

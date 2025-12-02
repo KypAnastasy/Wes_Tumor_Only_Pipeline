@@ -183,6 +183,7 @@ This step trains a read orientation model using the F1R2 files. These files are 
 -O ~/1/SRR13018652.read-orientation-model.tar.gz: The model is saved to the specified output file (read-orientation-model.tar.gz), which will be used later for filtering variants in the next steps.
 
 Step 15: GetPileupSummaries (Contamination Estimation)
+
 >gatk GetPileupSummaries \
   >-I ~/1/SRR13018652.recal.bam \
   >-V af-only-gnomad.hg38.vcf.gz \
@@ -749,7 +750,6 @@ After organizing all the final results into the proper directories, the script p
 Final Results Path:
 
 The results can be found in the /home/1/final_results/ directory, and the clinical report can be accessed at /home/1/final_results/02_reports/final_clinical_report.md.
-EOF
 
 ## **README (Русский)**
 
@@ -919,55 +919,56 @@ EOF
 Объяснение:
 В данном случае GATK Mutect2 используется для выявления соматических вариантов в образце опухоли в режиме «только опухоль». Инструмент выявляет мутации, специфичные для опухоли, такие как однонуклеотидные варианты (SNV) и инделы.
 
---germline-resource af-only-gnomad.hg38.vcf.gz: This provides the germline variant resource to differentiate somatic mutations from normal variants.
+--germline-resource af-only-gnomad.hg38.vcf.gz: Этот шаг предоставляет ресурс герминальных вариантов для дифференциации соматических мутаций от нормальных вариантов.
 
---f1r2-tar-gz ~/1/SRR13018652.f1r2.tar.gz: This option provides the F1R2 files, which are used for orientation bias correction.
+--f1r2-tar-gz ~/1/SRR13018652.f1r2.tar.gz: Эта опция предоставляет файлы F1R2, которые используются для коррекции смещения по ориентации.
 
-The output file (SRR13018652.unfiltered.vcf.gz) contains all the variants identified by Mutect2, but these have not yet been filtered.
+Выходной файл (SRR13018652.unfiltered.vcf.gz) содержит все варианты, выявленные Mutect2, но они ещё не были отфильтрованы.
 
-Step 14: Learn Read Orientation Model
+Шаг 14: Построение модели ориентации ридов (чтений)
 
 >gatk LearnReadOrientationModel \
   >-I ~/1/SRR13018652.f1r2.tar.gz \
   >-O ~/1/SRR13018652.read-orientation-model.tar.gz
 
-Explanation:
+Объяснение:
 
-This step trains a read orientation model using the F1R2 files. These files are essential for detecting and correcting read orientation biases that can occur during sequencing, which could lead to incorrect variant calls.
+На этом шаге обучается модель ориентации ридов с использованием файлов F1R2. Эти файлы необходимы для выявления и коррекции смещений по ориентации прочтений, которые могут возникнуть при секвенировании и привести к ошибочному определению вариантов.
 
--O ~/1/SRR13018652.read-orientation-model.tar.gz: The model is saved to the specified output file (read-orientation-model.tar.gz), which will be used later for filtering variants in the next steps.
+-O ~/1/SRR13018652.read-orientation-model.tar.gz: Модель сохраняется в указанный выходной файл (read-orientation-model.tar.gz), который будет использоваться позже для фильтрации вариантов на следующих шагах.
 
-Step 15: GetPileupSummaries (Contamination Estimation)
+Шаг 15: Получение сводных данных о нуклеотидных частотах (Оценка контаминации)
+
 >gatk GetPileupSummaries \
   >-I ~/1/SRR13018652.recal.bam \
   >-V af-only-gnomad.hg38.vcf.gz \
   >-L af-only-gnomad.hg38.vcf.gz \
   >-O ~/1/SRR13018652.pileups.table
 
-Explanation:
+Объяснение:
 
-This step calculates pileup summaries using GATK GetPileupSummaries, which estimates the contamination in the tumor sample. Tumor samples can be contaminated with normal cells, which could affect variant calling. This step helps assess the level of normal cell contamination in the sample.
+Этот шаг вычисляет сводки о нуклеотидных частотах с помощью инструмента GATK GetPileupSummaries для оценки уровня контаминации в опухолевом образце. Опухолевые образцы могут быть загрязнены нормальными клетками, что может повлиять на выявление вариантов. Этот шаг помогает оценить уровень такого загрязнения.
 
--V af-only-gnomad.hg38.vcf.gz: The known variant sites from the gnomAD database are used to help estimate contamination levels.
+-V af-only-gnomad.hg38.vcf.gz: Используются известные сайты вариантов из базы данных gnomAD для помощи в оценке уровня контаминации.
 
--O ~/1/SRR13018652.pileups.table: The output file (pileups.table) contains the contamination estimates that will be used for variant filtering in the next steps.
+-O ~/1/SRR13018652.pileups.table: Выходной файл (pileups.table) содержит оценки контаминации, которые будут использоваться для фильтрации вариантов на следующих шагах.
 
-Step 16: Calculate Contamination
+Шаг 16: Расчет уровня контаминации
 
 >gatk CalculateContamination \
   >-I ~/1/SRR13018652.pileups.table \
   >-O ~/1/SRR13018652.contamination.table \
   >--tumor-segmentation ~/1/SRR13018652.segments.table
 
-Explanation:
+Объяснение:
 
-In this step, GATK CalculateContamination computes the contamination level of the tumor sample using the pileup summary table generated in the previous step. The contamination table is essential for filtering out variants that may be due to contamination with normal cells.
+На этом шаге инструмент GATK CalculateContamination вычисляет уровень контаминации опухолевого образца, используя таблицу сводок о нуклеотидных частотах, созданную на предыдущем шаге. Таблица контаминации необходима для фильтрации вариантов, которые могут быть вызваны загрязнением нормальными клетками.
 
--O ~/1/SRR13018652.contamination.table: This generates the contamination table (contamination.table), which will be used in the next step for filtering variants.
+-O ~/1/SRR13018652.contamination.table: Создаёт таблицу контаминации (contamination.table), которая будет использоваться на следующем шаге для фильтрации вариантов.
 
---tumor-segmentation ~/1/SRR13018652.segments.table: This provides the segmentation information of the tumor, which is necessary for accurate contamination estimation.
+--tumor-segmentation ~/1/SRR13018652.segments.table: Предоставляет информацию о сегментации опухоли, необходимую для точной оценки контаминации.
 
-Step 17: FilterMutectCalls (Variant Filtering)
+Шаг 17: Фильтрация вызовов Mutect (Фильтрация вариантов)
 
 >gatk FilterMutectCalls \
   >-V ~/1/SRR13018652.unfiltered.vcf.gz \
@@ -977,44 +978,44 @@ Step 17: FilterMutectCalls (Variant Filtering)
   >--ob-priors ~/1/SRR13018652.read-orientation-model.tar.gz \
  > -O ~/1/SRR13018652.filtered.vcf.gz
 
-Explanation:
+Объяснение:
 
-This step uses GATK FilterMutectCalls to filter the variants that were called in Step 13 (SRR13018652.unfiltered.vcf.gz). The filtering is based on several criteria, including contamination levels, read orientation biases, and tumor segmentation.
+Этот шаг использует инструмент GATK FilterMutectCalls для фильтрации вариантов, выявленных на Шаге 13 (файл SRR13018652.unfiltered.vcf.gz). Фильтрация основана на нескольких критериях, включая уровни контаминации, смещения по ориентации ридов и сегментацию опухоли.
 
---contamination-table ~/1/SRR13018652.contamination.table: The contamination information is applied here to correct for possible contamination from normal cells.
+--contamination-table ~/1/SRR13018652.contamination.table: Информация о контаминации применяется здесь для коррекции возможного загрязнения нормальными клетками.
 
---ob-priors ~/1/SRR13018652.read-orientation-model.tar.gz: The orientation bias model is applied for further filtering of variants.
+--ob-priors ~/1/SRR13018652.read-orientation-model.tar.gz: Модель смещения по ориентации применяется для дальнейшей фильтрации вариантов.
 
-The output file (SRR13018652.filtered.vcf.gz) contains the filtered variants.
+Выходной файл (SRR13018652.filtered.vcf.gz) содержит отфильтрованные варианты.
 
-Step 18: Hard Filtering (Apply Custom Filters)
+Шаг 18: Строгая фильтрация (Применение пользовательских фильтров)
 
 >bcftools filter -i \
   >'FORMAT/DP>=20 && FORMAT/AD[0:1]>=5 && (FORMAT/AD[0:1]/(FORMAT/AD[0:0]+FORMAT/AD[0:1]))>=0.05 && FILTER="PASS"' \
   >~/1/SRR13018652.filtered.vcf.gz \
   >-Oz -o ~/1/SRR13018652.final.vcf.gz
 
-Explanation:
+Объяснение:
 
-This step uses bcftools to apply hard filters on the variants. The filters are based on criteria such as:
+На этом шаге используется инструмент bcftools для применения строгих фильтров к вариантам. Фильтры основаны на таких критериях, как:
 
-Depth of coverage (DP),
+Глубина покрытия (DP),
 
-Allelic depth (AD),
+Аллельная глубина (AD),
 
-Allele frequency (AF).
+Частота аллели (AF).
 
-The result is a highly filtered VCF file (SRR13018652.final.vcf.gz) with variants that meet all the specified criteria.
+Результатом является строго отфильтрованный файл VCF (SRR13018652.final.vcf.gz), содержащий варианты, соответствующие всем заданным критериям.
 
-Step 19: Decompress Final VCF File
+Шаг 19: Распаковка финального VCF файла
 
 >gunzip -c /home/1/SRR13018652.final.vcf.gz > /home/1/SRR13018652.final.vcf
 
-Explanation:
+Объяснение:
 
-This step decompresses the final VCF file, making it available as a standard text file (SRR13018652.final.vcf) for further analysis or visualization.
+Этот шаг распаковывает финальный VCF файл, делая его доступным в виде стандартного текстового файла (SRR13018652.final.vcf) для дальнейшего анализа или визуализации.
 
-Step 20: VEP Annotation (Variant Effect Predictor)
+Шаг 20: Аннотация с помощью VEP (Variant Effect Predictor / Предиктор эффекта вариантов)
 
 >vep -i ~/1/SRR13018652.final.vcf \
     >-o ~/1/SRR13018652.annotated.vcf \
@@ -1033,35 +1034,35 @@ Step 20: VEP Annotation (Variant Effect Predictor)
     >--force_overwrite
 
 
-Explanation:
+Объяснение:
 
-In this step, VEP (Variant Effect Predictor) is used to annotate the final VCF file with detailed information about the functional consequences of the variants.
+На этом шаге используется VEP (Variant Effect Predictor / Предиктор эффекта вариантов) для аннотирования финального VCF файла подробной информацией о функциональных последствиях вариантов.
 
---cache: Uses a local cache to speed up the annotation process.
+--cache: Использует локальный кэш для ускорения процесса аннотации.
 
---species homo_sapiens: Specifies that the annotations are for human variants.
+--species homo_sapiens: Указывает, что аннотации предназначены для вариантов человека.
 
---assembly GRCh38: Specifies the reference genome version (GRCh38).
+--assembly GRCh38: Указывает версию референсного генома (GRCh38).
 
---symbol: Includes gene symbols in the annotation output.
+--symbol: Включает символы генов в выходные данные аннотации.
 
---canonical: Selects the canonical transcript for each gene.
+--canonical: Выбирает канонический транскрипт для каждого гена.
 
---protein: Includes protein information like protein domains and functional effects.
+--protein: Включает информацию о белке, такую как белковые домены и функциональные эффекты.
 
---af: Adds allele frequency data to the annotations.
+--af: Добавляет данные о частоте аллелей к аннотациям.
 
---sift b and --polyphen b: These options use SIFT and PolyPhen to predict the impact of the variants on protein function (b = both prediction scores).
+--sift b и --polyphen b: Эти параметры используют SIFT и PolyPhen для прогнозирования влияния вариантов на функцию белка (b = оба показателя предсказания).
 
---mane: Includes MANE (Mutant Allele-specific Nucleotide Environment) annotations for transcript accuracy.
+--mane: Включает аннотации MANE (Mutant Allele-specific Nucleotide Environment) для точности транскриптов.
 
---vcf: Outputs the results in VCF format.
+--vcf: Выводит результаты в формате VCF.
 
---force_overwrite: Overwrites the output file if it already exists.
+--force_overwrite: Перезаписывает выходной файл, если он уже существует.
 
-The output (SRR13018652.annotated.vcf) contains the annotated variants, providing detailed information on their functional impact.
+Выходной файл (SRR13018652.annotated.vcf) содержит аннотированные варианты с подробной информацией об их функциональном воздействии.
 
-Step 21: Create Breast Cancer Genes List
+Шаг 21: Создание списка генов рака молочной железы
 
 >cat > /home/1/breast_cancer_genes.txt << 'EOF'
 >BRCA1
@@ -1080,15 +1081,15 @@ Step 21: Create Breast Cancer Genes List
 >BRIP1
 >EOF
 
-Explanation:
+Объяснение:
 
-This step creates a text file (breast_cancer_genes.txt) containing a list of known breast cancer-related genes. These genes are selected because mutations in them are known to be associated with breast cancer.
+На этом шаге создаётся текстовый файл (breast_cancer_genes.txt), содержащий список известных генов, связанных с раком молочной железы. Эти гены выбраны потому, что мутации в них известны своей ассоциацией с данным заболеванием.
 
-The list includes key tumor suppressor genes (e.g., BRCA1, BRCA2) and oncogenes (e.g., PIK3CA, AKT1).
+Список включает ключевые гены-супрессоры опухолей (например, BRCA1, BRCA2) и онкогены (например, PIK3CA, AKT1).
 
-This list will later be used to filter variants to focus specifically on mutations in breast cancer-related genes.
+Этот список позже будет использован для фильтрации вариантов, чтобы сфокусироваться именно на мутациях в генах, связанных с раком молочной железы.
 
-Step 22: Filter Variants in Breast Cancer Genes
+Шаг 22: Фильтрация вариантов в генах рака молочной железы
 
 >bcftools view -h /home/1/SRR13018652.annotated.vcf > /home/1/header.vcf
 
@@ -1096,17 +1097,17 @@ Step 22: Filter Variants in Breast Cancer Genes
   >grep -E "$(paste -s -d '|' /home/1/breast_cancer_genes.txt)" | \
   >cat /home/1/header.vcf - > /home/1/SRR13018652.breast_cancer_genes.vcf
 
-Explanation:
+Объяснение:
 
-This step filters the annotated variants to retain only those in the genes listed in breast_cancer_genes.txt.
+На этом шаге фильтруются аннотированные варианты, чтобы оставить только те, что находятся в генах из списка breast_cancer_genes.txt.
 
-The first command (bcftools view -h) extracts the header from the VCF file and saves it to header.vcf.
+Первая команда (bcftools view -h) извлекает заголовок из VCF файла и сохраняет его в header.vcf.
 
-The second command filters the variants using grep and the gene list (breast_cancer_genes.txt), and then merges the header with the filtered variants.
+Вторая команда фильтрует варианты с помощью grep и списка генов (breast_cancer_genes.txt), а затем объединяет заголовок с отфильтрованными вариантами.
 
-The final result is stored in SRR13018652.breast_cancer_genes.vcf, which contains only variants in breast cancer-related genes.
+Итоговый результат сохраняется в файл SRR13018652.breast_cancer_genes.vcf, который содержит только варианты в генах, связанных с раком молочной железы.
 
-Step 23: Analyze Results (Variant Count and Distribution by Gene)
+Шаг 23: Анализ результатов (подсчёт вариантов и их распределение по генам)
 
 >echo "Total variants in breast cancer genes:"
 >grep -v "^#" /home/1/SRR13018652.breast_cancer_genes.vcf | wc -l
@@ -1118,21 +1119,21 @@ Step 23: Analyze Results (Variant Count and Distribution by Gene)
   >cut -d'|' -f4 | \
   >sort | uniq -c | sort -nr
 
-Explanation:
+Объяснение:
 
-This step provides an analysis of the variants in the breast cancer-related genes:
+На этом шаге проводится анализ вариантов в генах, связанных с раком молочной железы:
 
-Total Variants: It counts the total number of variants in the filtered VCF (SRR13018652.breast_cancer_genes.vcf), excluding comment lines (lines starting with #).
+Общее количество вариантов: Подсчитывается общее число вариантов в отфильтрованном VCF-файле (SRR13018652.breast_cancer_genes.vcf), исключая строки-комментарии (строки, начинающиеся с #).
 
-Distribution by Gene: It analyzes the distribution of the variants across the genes:
+Распределение по генам: Анализируется распределение вариантов по генам.
 
-grep -o "CSQ=[^;]*" extracts the Consequence Annotation (CSQ) field from the VCF.
+grep -o "CSQ=[^;]*" извлекает из VCF поля аннотации эффекта вариантов (CSQ).
 
-cut -d'|' -f4 extracts the gene symbol from the CSQ field.
+cut -d'|' -f4 извлекает символ гена из поля CSQ.
 
-sort | uniq -c | sort -nr counts the occurrences of each gene and sorts them in descending order.
+sort | uniq -c | sort -nr подсчитывает вхождения каждого гена и сортирует их по убыванию.
 
-Step 24: Extract Key Mutation Details
+Шаг 24: Извлечение ключевых деталей мутаций
 
 >echo "Detailed variants information:"
 >grep -v "^#" /home/1/SRR13018652.breast_cancer_genes.vcf | \
@@ -1150,24 +1151,23 @@ Step 24: Extract Key Mutation Details
     >print "";
   >}'
 
+Объяснение:
 
-Explanation:
+На этом шаге извлекается подробная информация о каждой ключевой мутации:
 
-This step extracts detailed information about each key mutation:
+Обрабатывается каждая строка варианта из файла SRR13018652.breast_cancer_genes.vcf, извлекая такие детали, как:
 
-It processes each variant line from SRR13018652.breast_cancer_genes.vcf, extracting details such as:
+Хромосома ($1),
 
-Chromosome ($1),
+Позиция ($2),
 
-Position ($2),
+Референсный и альтернативный аллели ($4 и $5).
 
-Reference and alternate alleles ($4 and $5).
+Также включается поле аннотации эффекта вариантов (CSQ), которое содержит информацию о символе гена, типе мутации и её функциональном эффекте (например, миссенс-мутация, фреймшифт).
 
-It also includes the Consequence Annotation (CSQ), which provides information on the gene symbol, mutation type, and the functional effect (e.g., missense, frameshift).
+Результат выводится в удобочитаемом формате.
 
-The output displays these details in a readable format.
-
-Step 25: Determine Patient Sex
+Шаг 25: Определение пола пациента
 
 >echo "Determining patient sex:"
 >y_reads=$(samtools idxstats /home/1/SRR13018652.recal.bam | awk '$1 == "chrY" {print $3}')
@@ -1181,21 +1181,21 @@ Step 25: Determine Patient Sex
     >sex="FEMALE"
 >fi
 
-Explanation:
+Объяснение:
 
-This step determines the biological sex of the patient based on the presence of Y chromosome reads in the BAM file:
+На этом шаге определяется биологический пол пациента на основе наличия ридов Y-хромосомы в BAM-файле:
 
-samtools idxstats provides statistics about the reference chromosomes in the BAM file.
+samtools idxstats предоставляет статистику по референсным хромосомам в BAM-файле.
 
-The script checks the number of reads aligned to the Y chromosome (chrY):
+Скрипт проверяет количество ридов, картированных на Y-хромосому (chrY):
 
-If the number of Y chromosome reads is greater than 1000, the patient is classified as male.
+Если количество ридов на Y-хромосоме больше 1000, пациент классифицируется как мужского пола (MALE).
 
-Otherwise, the patient is classified as female.
+В противном случае пациент классифицируется как женского пола (FEMALE).
 
-The determined sex (MALE or FEMALE) is stored in the sex variable.
+Определённый пол (MALE или FEMALE) сохраняется в переменной sex.
 
-Step 26: Detailed Analysis of Key Mutations
+Шаг 26: Подробный анализ ключевых мутаций
 
 cat > /home/1/analyze_key_mutations.sh << 'EOF'
 #!/bin/bash
@@ -1288,21 +1288,21 @@ chmod +x /home/1/analyze_key_mutations.sh
 /home/1/analyze_key_mutations.sh > /home/1/key_mutations_detailed_analysis.txt
 
 
-Explanation:
+Объяснение:
 
-This script performs a detailed analysis of specific key mutations in the breast cancer-related genes list. It examines specific mutations (given by chromosome and position) and extracts detailed variant information such as:
+Этот скрипт выполняет подробный анализ конкретных ключевых мутаций из списка генов, связанных с раком молочной железы. Он исследует определённые мутации (заданные по хромосоме и позиции) и извлекает детальную информацию о вариантах, такую как:
 
-Gene symbol, type, and impact of mutation.
+Символ гена, тип и значимость мутации.
 
-Genotype and depth of sequencing (AD, DP, AF).
+Генотип и глубина секвенирования (AD, DP, AF).
 
-Variant allele frequency (VAF).
+Частота вариантного аллеля (VAF).
 
-Additional details like tumor log odds (TLOD), depth (DP), and allele frequency (AF) from the INFO field.
+Дополнительные детали из поля INFO, такие как логарифм отношения правдоподобия для опухоли (TLOD), глубина покрытия (DP) и частота аллели (AF).
 
-After running the script, the output is saved in key_mutations_detailed_analysis.txt.
+После запуска скрипта результат сохраняется в файл key_mutations_detailed_analysis.txt.
 
-Step 27: Create Final Clinical Report
+Шаг 27: Создание итогового клинического отчёта
 
 >cat > /home/ser/1/final_clinical_report.md << EOF
 ># GENOMIC ANALYSIS REPORT
@@ -1364,23 +1364,23 @@ Step 27: Create Final Clinical Report
 >Analysis completed: $(date)
 >EOF
 
-Explanation:
+Объяснение:
 
-This step creates a clinical report in markdown format. The report includes:
+На этом шаге создаётся клинический отчёт в формате Markdown. Отчёт включает:
 
-Patient Information: Sample ID and biological sex.
+Информация о пациенте: Идентификатор образца и биологический пол.
 
-Executive Summary: A brief overview of the key mutations found in the analysis (e.g., TP53, BRCA1, PIK3CA).
+Резюме: Краткий обзор ключевых мутаций, обнаруженных в ходе анализа (например, TP53, BRCA1, PIK3CA).
 
-Clinical Recommendations: Suggestions for genetic counseling, cancer surveillance, and possible therapeutic considerations based on the detected mutations.
+Клинические рекомендации: Предложения по генетическому консультированию, наблюдению за онкологическим статусом и возможным терапевтическим соображениям на основе выявленных мутаций.
 
-Methods: Details on the sequencing technology, reference genome, variant caller, and annotation methods used in the analysis.
+Методы: Подробности об использованной технологии секвенирования, референсном геноме, программе для вызова вариантов и методах аннотации.
 
-Limitations: Acknowledgement of the limitations of the analysis, such as the tumor-only approach without a matched normal sample.
+Ограничения: Указание на ограничения проведённого анализа, такие как подход без парного нормального образца (tumor-only).
 
-The clinical report is saved as final_clinical_report.md.
+Клинический отчёт сохраняется как final_clinical_report.md.
 
-Step 28: Prostate Cancer Analysis for Male Patients
+Шаг 28: Анализ рака простаты для пациентов мужского пола
 
 >if [ "$sex" = "MALE" ]; then
     >cat > /home/1/prostate_cancer_genes.txt << 'EOF'
@@ -1412,10 +1412,10 @@ Step 28: Prostate Cancer Analysis for Male Patients
     >echo "- Consider PSA screening starting at age 40" >> /home/1/final_clinical_report.md
 >fi
 
-Explanation:
-This step checks if the patient is male and, if so, analyzes prostate cancer-related mutations (in genes like BRCA1, TP53, etc.). It adds information about prostate cancer risk and screening recommendations to the final clinical report.
+Объяснение:
+Этот шаг проверяет, является ли пациент мужчиной, и если да, анализирует мутации, связанные с раком простаты (в генах, таких как BRCA1, TP53 и др.). Он добавляет информацию о риске рака простаты и рекомендации по скринингу в итоговый клинический отчёт.
 
-Step 29: Create Results Summary Table
+Шаг 29: Создание сводной таблицы результатов
 
 >cat > /home/1/results_summary.csv << EOF
 >Category,Value
@@ -1429,35 +1429,33 @@ Key_Driver_Mutations,3
 >PIK3CA_VAF,0.369
 >Analysis_Date,$(date +"%Y-%m-%d")
 
-Explanation:
+Объяснение:
 
-Create a CSV file summarizing the analysis results:
+Создание CSV-файла, суммирующего результаты анализа:
 
-This step generates a summary table in CSV format, which includes key metrics such as:
+На этом шаге генерируется сводная таблица в формате CSV, которая включает ключевые метрики, такие как:
 
-Sample ID (SRR13018652).
+Идентификатор образца (SRR13018652).
 
-Patient sex ($sex).
+Пол пациента ($sex).
 
-The total number of variants found in the final VCF (Total_Variants).
+Общее количество вариантов, найденных в финальном VCF (Total_Variants).
 
-The number of variants found in breast cancer genes (Breast_Cancer_Gene_Variants).
+Количество вариантов, найденных в генах рака молочной железы (Breast_Cancer_Gene_Variants).
 
-The count of key driver mutations (hardcoded to 3 in this case).
+Количество ключевых драйверных мутаций (в данном случае жёстко задано как 3).
 
-Variant Allele Frequencies (VAF) for TP53, BRCA1, and PIK3CA mutations.
+Частоты вариантных аллелей (VAF) для мутаций в TP53, BRCA1 и PIK3CA.
 
-The date of analysis.
+Дата анализа.
 
-Dynamic Variables:
+Динамические переменные:
+Таблица извлекает динамические данные, такие как количество вариантов и дата анализа, выполняя команды внутри синтаксиса $(...) (например, подсчитывая строки в VCF-файлах для общего числа вариантов).
 
-The table pulls dynamic data such as variant counts and analysis date by running commands within the $(...) syntax (e.g., counting the lines in the VCF files for total variants).
+Созданный файл:
+Файл results_summary.csv создаётся для быстрого обзора результатов анализа.
 
-File Created:
-
-A file results_summary.csv is created to provide a quick overview of the analysis results.
-
-Step 30: Organize Final Results
+Шаг 30: Организация финальных результатов
 
 >mkdir -p /home/1/final_results/01_vcf_files
 >mkdir -p /home/1/final_results/02_reports
@@ -1479,30 +1477,26 @@ Step 30: Organize Final Results
 >echo "Results available in: /home/1/final_results/"
 >echo "Clinical report: /home/1/final_results/02_reports/final_clinical_report.md"
 
-Explanation:
+Объяснение:
 
-Create Directories for Final Results:
+Создание директорий для финальных результатов:
 
-mkdir -p /home/1/final_results/01_vcf_files creates a directory for VCF files.
+mkdir -p /home/1/final_results/01_vcf_files создаёт директорию для VCF-файлов.
+mkdir -p /home/1/final_results/02_reports создаёт директорию для отчётов.
+mkdir -p /home/1/final_results/03_quality_metrics создаёт директорию для метрик качества (QC).
 
-mkdir -p /home/1/final_results/02_reports creates a directory for reports.
+Организация файлов по соответствующим директориям:
 
-mkdir -p /home/1/final_results/03_quality_metrics creates a directory for quality metrics (QC).
+VCF-файлы: Финальные VCF-файлы (final.vcf, annotated.vcf, breast_cancer_genes.vcf и, при наличии, prostate_cancer_genes.vcf для пациентов мужского пола) копируются в директорию 01_vcf_files.
 
-Organize Files into Proper Directories:
+Отчёты: Клинический отчёт (final_clinical_report.md), сводка результатов (results_summary.csv) и детальный анализ мутаций (key_mutations_detailed_analysis.txt) копируются в директорию 02_reports.
 
-VCF files: The final VCF files (final.vcf, annotated.vcf, breast_cancer_genes.vcf, and optionally, prostate_cancer_genes.vcf for male patients) are copied into the 01_vcf_files directory.
+Метрики качества: Отчёты по контролю качества (fastqc_reports и fastp_report.html) копируются в директорию 03_quality_metrics.
 
-Reports: The clinical report (final_clinical_report.md), results summary (results_summary.csv), and detailed mutations analysis (key_mutations_detailed_analysis.txt) are copied into the 02_reports directory.
+Сообщение о завершении:
 
-Quality Metrics: QC reports (fastqc_reports and fastp_report.html) are copied into the 03_quality_metrics directory.
+После организации всех финальных результатов по соответствующим директориям скрипт выводит сообщение о завершении с указанием путей к результатам.
 
-Completion Message:
+Путь к финальным результатам:
 
-After organizing all the final results into the proper directories, the script prints a completion message with the paths to the results.
-
-Final Results Path:
-
-The results can be found in the /home/1/final_results/ directory, and the clinical report can be accessed at /home/1/final_results/02_reports/final_clinical_report.md.
-EOF
-
+Результаты можно найти в директории /home/1/final_results/, а клинический отчёт доступен по пути /home/1/final_results/02_reports/final_clinical_report.md.

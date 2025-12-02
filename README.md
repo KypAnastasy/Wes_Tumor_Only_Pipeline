@@ -145,6 +145,117 @@ Step 12: Apply Base Quality Score Recalibration (BQSR)
 >
 Explanation:
 In this step, GATK ApplyBQSR applies the recalibrated base quality scores to the deduplicated BAM file, which was produced in Step 9. This helps improve variant calling accuracy by correcting systematic biases in the base quality scores.
+
 --bqsr-recal-file SRR13018652.recal.table: This option applies the recalibration table (SRR13018652.recal.table) generated in the previous step.
+
 -O SRR13018652.recal.bam: This produces a new BAM file (SRR13018652.recal.bam) with the adjusted base quality scores, ready for variant calling.
+
+Step 13: Mutect2 (Somatic Variant Calling)
+
+>gatk Mutect2 \
+  >-R hg38.fa \
+  >-I ~/1/SRR13018652.recal.bam \
+  -tumor SRR13018652 \
+  >--germline-resource af-only-gnomad.hg38.vcf.gz \
+  >--f1r2-tar-gz ~/1/SRR13018652.f1r2.tar.gz \
+  >-O ~/1/SRR13018652.unfiltered.vcf.gz
+
+Explanation:
+
+Here, GATK Mutect2 is used to call somatic variants in the tumor sample in tumor-only mode. The tool identifies mutations specific to the tumor, such as single nucleotide variants (SNVs) and indels.
+
+--germline-resource af-only-gnomad.hg38.vcf.gz: This provides the germline variant resource to differentiate somatic mutations from normal variants.
+
+--f1r2-tar-gz ~/1/SRR13018652.f1r2.tar.gz: This option provides the F1R2 files, which are used for orientation bias correction.
+
+The output file (SRR13018652.unfiltered.vcf.gz) contains all the variants identified by Mutect2, but these have not yet been filtered.
+
+Step 14: Learn Read Orientation Model
+
+>gatk LearnReadOrientationModel \
+  >-I ~/1/SRR13018652.f1r2.tar.gz \
+  >-O ~/1/SRR13018652.read-orientation-model.tar.gz
+
+Explanation:
+
+This step trains a read orientation model using the F1R2 files. These files are essential for detecting and correcting read orientation biases that can occur during sequencing, which could lead to incorrect variant calls.
+
+-O ~/1/SRR13018652.read-orientation-model.tar.gz: The model is saved to the specified output file (read-orientation-model.tar.gz), which will be used later for filtering variants in the next steps.
+
+Step 15: GetPileupSummaries (Contamination Estimation)
+>gatk GetPileupSummaries \
+  >-I ~/1/SRR13018652.recal.bam \
+  >-V af-only-gnomad.hg38.vcf.gz \
+  >-L af-only-gnomad.hg38.vcf.gz \
+  >-O ~/1/SRR13018652.pileups.table
+
+Explanation:
+
+This step calculates pileup summaries using GATK GetPileupSummaries, which estimates the contamination in the tumor sample. Tumor samples can be contaminated with normal cells, which could affect variant calling. This step helps assess the level of normal cell contamination in the sample.
+
+-V af-only-gnomad.hg38.vcf.gz: The known variant sites from the gnomAD database are used to help estimate contamination levels.
+
+-O ~/1/SRR13018652.pileups.table: The output file (pileups.table) contains the contamination estimates that will be used for variant filtering in the next steps.
+
+Step 16: Calculate Contamination
+
+>gatk CalculateContamination \
+  >-I ~/1/SRR13018652.pileups.table \
+  >-O ~/1/SRR13018652.contamination.table \
+  >--tumor-segmentation ~/1/SRR13018652.segments.table
+
+Explanation:
+
+In this step, GATK CalculateContamination computes the contamination level of the tumor sample using the pileup summary table generated in the previous step. The contamination table is essential for filtering out variants that may be due to contamination with normal cells.
+
+-O ~/1/SRR13018652.contamination.table: This generates the contamination table (contamination.table), which will be used in the next step for filtering variants.
+
+--tumor-segmentation ~/1/SRR13018652.segments.table: This provides the segmentation information of the tumor, which is necessary for accurate contamination estimation.
+
+Step 17: FilterMutectCalls (Variant Filtering)
+
+>gatk FilterMutectCalls \
+  >-V ~/1/SRR13018652.unfiltered.vcf.gz \
+  >-R hg38.fa \
+  >--contamination-table ~/1/SRR13018652.contamination.table \
+  >--tumor-segmentation ~/1/SRR13018652.segments.table \
+  >--ob-priors ~/1/SRR13018652.read-orientation-model.tar.gz \
+ > -O ~/1/SRR13018652.filtered.vcf.gz
+
+Explanation:
+
+This step uses GATK FilterMutectCalls to filter the variants that were called in Step 13 (SRR13018652.unfiltered.vcf.gz). The filtering is based on several criteria, including contamination levels, read orientation biases, and tumor segmentation.
+
+--contamination-table ~/1/SRR13018652.contamination.table: The contamination information is applied here to correct for possible contamination from normal cells.
+
+--ob-priors ~/1/SRR13018652.read-orientation-model.tar.gz: The orientation bias model is applied for further filtering of variants.
+
+The output file (SRR13018652.filtered.vcf.gz) contains the filtered variants.
+
+Step 18: Hard Filtering (Apply Custom Filters)
+
+>bcftools filter -i \
+  >'FORMAT/DP>=20 && FORMAT/AD[0:1]>=5 && (FORMAT/AD[0:1]/(FORMAT/AD[0:0]+FORMAT/AD[0:1]))>=0.05 && FILTER="PASS"' \
+  >~/1/SRR13018652.filtered.vcf.gz \
+  >-Oz -o ~/1/SRR13018652.final.vcf.gz
+
+Explanation:
+
+This step uses bcftools to apply hard filters on the variants. The filters are based on criteria such as:
+
+Depth of coverage (DP),
+
+Allelic depth (AD),
+
+Allele frequency (AF).
+
+The result is a highly filtered VCF file (SRR13018652.final.vcf.gz) with variants that meet all the specified criteria.
+
+Step 19: Decompress Final VCF File
+
+>gunzip -c /home/ser/1/SRR13018652.final.vcf.gz > /home/ser/1/SRR13018652.final.vcf
+
+Explanation:
+
+This step decompresses the final VCF file, making it available as a standard text file (SRR13018652.final.vcf) for further analysis or visualization.
 

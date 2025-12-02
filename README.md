@@ -333,3 +333,81 @@ The list includes key tumor suppressor genes (e.g., BRCA1, BRCA2) and oncogenes 
 
 This list will later be used to filter variants to focus specifically on mutations in breast cancer-related genes.
 
+Step 22: Filter Variants in Breast Cancer Genes
+
+>bcftools view -h /home/1/SRR13018652.annotated.vcf > /home/ser/1/header.vcf
+
+>bcftools view -H /home/ser/1/SRR13018652.annotated.vcf | \
+  >grep -E "$(paste -s -d '|' /home/ser/1/breast_cancer_genes.txt)" | \
+  >cat /home/ser/1/header.vcf - > /home/ser/1/SRR13018652.breast_cancer_genes.vcf
+
+Explanation:
+
+This step filters the annotated variants to retain only those in the genes listed in breast_cancer_genes.txt.
+
+The first command (bcftools view -h) extracts the header from the VCF file and saves it to header.vcf.
+
+The second command filters the variants using grep and the gene list (breast_cancer_genes.txt), and then merges the header with the filtered variants.
+
+The final result is stored in SRR13018652.breast_cancer_genes.vcf, which contains only variants in breast cancer-related genes.
+
+Step 23: Analyze Results (Variant Count and Distribution by Gene)
+
+>echo "Total variants in breast cancer genes:"
+>grep -v "^#" /home/ser/1/SRR13018652.breast_cancer_genes.vcf | wc -l
+
+>echo "Distribution by genes:"
+>grep -v "^#" /home/ser/1/SRR13018652.breast_cancer_genes.vcf | \
+  >grep -o "CSQ=[^;]*" | \
+  >tr ',' '\n' | \
+  >cut -d'|' -f4 | \
+  >sort | uniq -c | sort -nr
+
+Explanation:
+
+This step provides an analysis of the variants in the breast cancer-related genes:
+
+Total Variants: It counts the total number of variants in the filtered VCF (SRR13018652.breast_cancer_genes.vcf), excluding comment lines (lines starting with #).
+
+Distribution by Gene: It analyzes the distribution of the variants across the genes:
+
+grep -o "CSQ=[^;]*" extracts the Consequence Annotation (CSQ) field from the VCF.
+
+cut -d'|' -f4 extracts the gene symbol from the CSQ field.
+
+sort | uniq -c | sort -nr counts the occurrences of each gene and sorts them in descending order.
+
+Step 24: Extract Key Mutation Details
+
+>echo "Detailed variants information:"
+>grep -v "^#" /home/ser/1/SRR13018652.breast_cancer_genes.vcf | \
+  >awk -F'\t' '{
+    >printf "%-10s %-10s %-15s", $1, $2, $4 ">" $5;
+    >if ($8 ~ /CSQ=/) {
+      >split($8, info, ";");
+      >for (i in info) {
+        >if (info[i] ~ /^CSQ=/) {
+          >split(info[i], csq, "|");
+          >printf " %s (%s)", csq[4], csq[2];
+        >}
+      >}
+    >}
+    >print "";
+  >}'
+
+
+Explanation:
+
+This step extracts detailed information about each key mutation:
+
+It processes each variant line from SRR13018652.breast_cancer_genes.vcf, extracting details such as:
+
+Chromosome ($1),
+
+Position ($2),
+
+Reference and alternate alleles ($4 and $5).
+
+It also includes the Consequence Annotation (CSQ), which provides information on the gene symbol, mutation type, and the functional effect (e.g., missense, frameshift).
+
+The output displays these details in a readable format.

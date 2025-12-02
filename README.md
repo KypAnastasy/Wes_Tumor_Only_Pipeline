@@ -610,7 +610,6 @@ Step 27: Create Final Clinical Report
 >Analysis completed: $(date)
 >EOF
 
-
 Explanation:
 
 This step creates a clinical report in markdown format. The report includes:
@@ -626,3 +625,129 @@ Methods: Details on the sequencing technology, reference genome, variant caller,
 Limitations: Acknowledgement of the limitations of the analysis, such as the tumor-only approach without a matched normal sample.
 
 The clinical report is saved as final_clinical_report.md.
+
+Step 28: Prostate Cancer Analysis for Male Patients
+
+>if [ "$sex" = "MALE" ]; then
+    >cat > /home/1/prostate_cancer_genes.txt << 'EOF'
+>BRCA1
+>BRCA2
+>ATM
+>CHEK2
+>TP53
+>HOXB13
+>MLH1
+>MSH2
+>MSH6
+>PMS2
+>EOF
+
+    >bcftools view -h /home/1/SRR13018652.annotated.vcf > /home/1/header_prostate.vcf
+    
+    >bcftools view -H /home/1/SRR13018652.annotated.vcf | \
+      >grep -E "$(paste -s -d '|' /home/1/prostate_cancer_genes.txt)" | \
+      >cat /home1/header_prostate.vcf - > /home/1/SRR13018652.prostate_cancer_genes.vcf
+
+    >prostate_variants=$(grep -v "^#" /home/1/SRR13018652.prostate_cancer_genes.vcf | wc -l)
+    >echo "Variants in prostate cancer genes: $prostate_variants"
+    
+    >echo "" >> /home/1/final_clinical_report.md
+    >echo "### PROSTATE CANCER RISK ASSESSMENT" >> /home/1/final_clinical_report.md
+    >echo "Based on BRCA1 and TP53 mutations:" >> /home/1/final_clinical_report.md
+    >echo "- Lifetime prostate cancer risk: 20-25%" >> /home/1/final_clinical_report.md
+    >echo "- Consider PSA screening starting at age 40" >> /home/1/final_clinical_report.md
+>fi
+
+Explanation:
+This step checks if the patient is male and, if so, analyzes prostate cancer-related mutations (in genes like BRCA1, TP53, etc.). It adds information about prostate cancer risk and screening recommendations to the final clinical report.
+
+Step 29: Create Results Summary Table
+
+>cat > /home/1/results_summary.csv << EOF
+>Category,Value
+>Sample_ID,SRR13018652
+>Patient_Sex,$sex
+>Total_Variants,$(grep -v "^#" /home/1/SRR13018652.final.vcf | wc -l)
+>Breast_Cancer_Gene_Variants,$(grep -v "^#" /home/1/SRR13018652.breast_cancer_genes.vcf | wc -l)
+Key_Driver_Mutations,3
+>TP53_VAF,0.089
+>BRCA1_VAF,0.151
+>PIK3CA_VAF,0.369
+>Analysis_Date,$(date +"%Y-%m-%d")
+
+Explanation:
+
+Create a CSV file summarizing the analysis results:
+
+This step generates a summary table in CSV format, which includes key metrics such as:
+
+Sample ID (SRR13018652).
+
+Patient sex ($sex).
+
+The total number of variants found in the final VCF (Total_Variants).
+
+The number of variants found in breast cancer genes (Breast_Cancer_Gene_Variants).
+
+The count of key driver mutations (hardcoded to 3 in this case).
+
+Variant Allele Frequencies (VAF) for TP53, BRCA1, and PIK3CA mutations.
+
+The date of analysis.
+
+Dynamic Variables:
+
+The table pulls dynamic data such as variant counts and analysis date by running commands within the $(...) syntax (e.g., counting the lines in the VCF files for total variants).
+
+File Created:
+
+A file results_summary.csv is created to provide a quick overview of the analysis results.
+
+Step 30: Organize Final Results
+
+>mkdir -p /home/1/final_results/01_vcf_files
+>mkdir -p /home/1/final_results/02_reports
+>mkdir -p /home/1/final_results/03_quality_metrics
+
+>cp /home/1/SRR13018652.final.vcf /home/1/final_results/01_vcf_files/
+>cp /home/1/SRR13018652.annotated.vcf /home/1/final_results/01_vcf_files/
+>cp /home/1/SRR13018652.breast_cancer_genes.vcf /home/1/final_results/01_vcf_files/
+>[ "$sex" = "MALE" ] && cp /home/1/SRR13018652.prostate_cancer_genes.vcf /home/1/final_results/01_vcf_files/
+
+>cp /home/1/final_clinical_report.md /home/1/final_results/02_reports/
+>cp /home/1/results_summary.csv /home/1/final_results/02_reports/
+>cp /home/1/key_mutations_detailed_analysis.txt /home/1/final_results/02_reports/
+
+>cp -r /home/1/fastqc_reports /home/1/final_results/03_quality_metrics/
+>cp /home/1/fastp_report.html /home/1/final_results/03_quality_metrics/
+
+>echo "ANALYSIS COMPLETED"
+>echo "Results available in: /home/1/final_results/"
+>echo "Clinical report: /home/1/final_results/02_reports/final_clinical_report.md"
+
+Explanation:
+
+Create Directories for Final Results:
+
+mkdir -p /home/1/final_results/01_vcf_files creates a directory for VCF files.
+
+mkdir -p /home/1/final_results/02_reports creates a directory for reports.
+
+mkdir -p /home/1/final_results/03_quality_metrics creates a directory for quality metrics (QC).
+
+Organize Files into Proper Directories:
+
+VCF files: The final VCF files (final.vcf, annotated.vcf, breast_cancer_genes.vcf, and optionally, prostate_cancer_genes.vcf for male patients) are copied into the 01_vcf_files directory.
+
+Reports: The clinical report (final_clinical_report.md), results summary (results_summary.csv), and detailed mutations analysis (key_mutations_detailed_analysis.txt) are copied into the 02_reports directory.
+
+Quality Metrics: QC reports (fastqc_reports and fastp_report.html) are copied into the 03_quality_metrics directory.
+
+Completion Message:
+
+After organizing all the final results into the proper directories, the script prints a completion message with the paths to the results.
+
+Final Results Path:
+
+The results can be found in the /home/1/final_results/ directory, and the clinical report can be accessed at /home/1/final_results/02_reports/final_clinical_report.md.
+EOF

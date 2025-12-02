@@ -450,8 +450,7 @@ echo "Detailed analysis of key mutations"
 mutations=("chr17 7676154" "chr17 43063913" "chr3 179218303")
 
 for mutation in "${mutations[@]}"; do
-    chrom=$(echo "$mutation" | awk '{print $1}')
-    pos=$(echo "$mutation" | awk '{print $2}')
+    IFS=" " read -r chrom pos <<< "$mutation"
     
     echo ""
     echo "Analyzing mutation: $chrom $pos"

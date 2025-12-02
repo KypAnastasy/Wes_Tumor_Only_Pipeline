@@ -549,68 +549,70 @@ Additional details like tumor log odds (TLOD), depth (DP), and allele frequency 
 After running the script, the output is saved in key_mutations_detailed_analysis.txt.
 
 Step 27: Create Final Clinical Report
-cat > /home/ser/1/final_clinical_report.md << EOF
-# GENOMIC ANALYSIS REPORT
-## Whole Exome Sequencing - Tumor Only Analysis
 
-### PATIENT INFORMATION
-- Sample ID: SRR13018652
-- Biological Sex: $sex
-- Analysis Date: $(date +"%Y-%m-%d")
+>cat > /home/ser/1/final_clinical_report.md << EOF
+># GENOMIC ANALYSIS REPORT
+>## Whole Exome Sequencing - Tumor Only Analysis
 
-### EXECUTIVE SUMMARY
-Whole exome sequencing identified three clinically significant mutations in key cancer genes.
+>### PATIENT INFORMATION
+>- Sample ID: SRR13018652
+>- Biological Sex: $sex
+>- Analysis Date: $(date +"%Y-%m-%d")
 
-### KEY MUTATIONS IDENTIFIED
+>### EXECUTIVE SUMMARY
+>Whole exome sequencing identified three clinically significant mutations in key cancer genes.
 
-#### 1. TP53 Mutation
-- Location: chr17:7676154
-- Variant: G>C (Missense)
-- VAF: 8.9%
+>### KEY MUTATIONS IDENTIFIED
 
-#### 2. BRCA1 Mutation
-- Location: chr17:43063913
-- Variant: G>C (Missense) 
-- VAF: 15.1%
+>#### 1. TP53 Mutation
+>- Location: chr17:7676154
+>- Variant: G>C (Missense)
+>- VAF: 8.9%
 
-#### 3. PIK3CA Mutation
-- Location: chr3:179218303
-- Variant: G>A (Missense)
-- VAF: 36.9%
+>#### 2. BRCA1 Mutation
+>- Location: chr17:43063913
+>- Variant: G>C (Missense) 
+>- VAF: 15.1%
 
-### CLINICAL RECOMMENDATIONS
+>#### 3. PIK3CA Mutation
+>- Location: chr3:179218303
+>- Variant: G>A (Missense)
+>- VAF: 36.9%
 
-#### Genetic Counseling & Testing
-1. Confirm germline status of BRCA1 mutation
-2. Family member testing recommended
-3. Discuss reproductive implications
+>### CLINICAL RECOMMENDATIONS
 
-#### Cancer Surveillance
-1. Enhanced breast cancer screening
-2. $([ "$sex" = "MALE" ] && echo "Prostate cancer screening starting at age 40")
-3. Consider pancreatic cancer screening
+>#### Genetic Counseling & Testing
+>1. Confirm germline status of BRCA1 mutation
+>2. Family member testing recommended
+>3. Discuss reproductive implications
 
-#### Therapeutic Considerations
-1. PARP inhibitors for BRCA1-related cancers
-2. PI3K inhibitors for PIK3CA-mutated cancers
-3. Clinical trial eligibility assessment
+>#### Cancer Surveillance
+>1. Enhanced breast cancer screening
+>2. $([ "$sex" = "MALE" ] && echo "Prostate cancer screening starting at age 40")
+>3. Consider pancreatic cancer screening
 
-### METHODS
-- Sequencing Technology: Whole Exome Sequencing
-- Reference Genome: hg38
-- Variant Caller: GATK Mutect2 (tumor-only mode)
-- Annotation: Ensembl VEP
+>#### Therapeutic Considerations
+>1. PARP inhibitors for BRCA1-related cancers
+>2. PI3K inhibitors for PIK3CA-mutated cancers
+>3. Clinical trial eligibility assessment
 
-### LIMITATIONS
-- Tumor-only analysis without matched normal
+>### METHODS
+>- Sequencing Technology: Whole Exome Sequencing
+>- Reference Genome: hg38
+>- Variant Caller: GATK Mutect2 (tumor-only mode)
+>- Annotation: Ensembl VEP
+
+>### LIMITATIONS
+>- Tumor-only analysis without matched normal
 - Germline vs somatic status undetermined
-- Functional validation required for missense variants
+>>- Functional validation required for missense variants
 
-Analysis completed: $(date)
-EOF
+>Analysis completed: $(date)
+>EOF
 
 
 Explanation:
+
 This step creates a clinical report in markdown format. The report includes:
 
 Patient Information: Sample ID and biological sex.

@@ -1,0 +1,10 @@
+Category,Value
+Sample_ID,SRR13018652
+Patient_Sex,MALE
+Total_Variants,2493
+Breast_Cancer_Gene_Variants,13
+Key_Driver_Mutations,3
+TP53_VAF,0.089
+BRCA1_VAF,0.151
+PIK3CA_VAF,0.369
+Analysis_Date,2025-11-30

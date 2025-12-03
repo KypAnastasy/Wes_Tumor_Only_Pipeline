@@ -16,6 +16,23 @@ This repository contains a complete **whole exome sequencing (WES)** pipeline fo
 
 This analysis uses tools like **GATK**, **BWA-MEM2**, **bcftools**, **VEP**, and others, to process raw NGS data, call mutations, and provide clinically relevant results.
 
+Data Availability
+
+The complete processed data files (including FASTQ, BAM, VCF, and intermediate files) are too large to host on GitHub.
+
+They are available on Zenodo:
+
+https://doi.org/10.5281/zenodo.17803889
+
+
+Archive: wes_data_SRR13018652.tar.gz
+
+Size: ~20.5 GB (compressed)
+
+Contents: All intermediate and final files from the analysis pipeline.
+
+This repository contains only the source code and small example output files (e.g., final clinical report, summary tables) necessary to run the pipeline.
+
 How to Run the Pipeline
 
 Prerequisites
@@ -757,9 +774,24 @@ The results can be found in the /home/1/final_results/ directory, and the clinic
 Тумор-Онли WES Анализ для Рака Молочной Железы
 
 Описание
+
 Этот репозиторий содержит полный пиплайн для анализа всего экзома (WES) в режиме "тумор-онли" (анализ только опухоли), специально разработанный для рака молочной железы. Пиплайн включает несколько этапов, начиная с загрузки необработанных данных и заканчивая генерацией клинического отчета.
 
 В анализе используются такие инструменты, как GATK, BWA-MEM2, bcftools, VEP и другие, для обработки необработанных NGS-данных, вызова мутаций и предоставления клинически значимых результатов.
+
+Полные обработанные файлы данных (включая FASTQ, BAM, VCF и промежуточные файлы) слишком велики для размещения на GitHub.
+
+Они доступны на Zenodo:
+
+https://doi.org/10.5281/zenodo.17803889
+
+Архив: wes_data_SRR13018652.tar.gz
+
+Размер: ~20.5 ГБ (в сжатом виде)
+
+Содержимое: Все промежуточные и финальные файлы из конвейера анализа.
+
+Этот репозиторий содержит только исходный код и небольшие примеры выходных файлов (например, итоговый клинический отчёт, сводные таблицы), необходимые для запуска конвейера.
 
 Как запустить пиплайн
 

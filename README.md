@@ -446,11 +446,11 @@ Step 26: Detailed Analysis of Key Mutations
 >cat > /home/1/analyze_key_mutations.sh << 'EOF'
 >#!/bin/bash
 
-echo "Detailed analysis of key mutations"
+>echo "Detailed analysis of key mutations"
 
-mutations=("chr17 7676154" "chr17 43063913" "chr3 179218303")
+>mutations=("chr17 7676154" "chr17 43063913" "chr3 179218303")
 
-for mutation in "${mutations[@]}"; do
+>for mutation in "${mutations[@]}"; do
     IFS=" " read -r chrom pos <<< "$mutation"
     
     echo ""

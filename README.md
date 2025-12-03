@@ -526,7 +526,7 @@ for mutation in "${mutations[@]}"; do
         echo "Mutation $chrom $pos not found"
     fi
     echo ""
-done
+>done
 
 >EOF
 

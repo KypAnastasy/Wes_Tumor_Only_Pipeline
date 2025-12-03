@@ -443,8 +443,8 @@ The determined sex (MALE or FEMALE) is stored in the sex variable.
 
 Step 26: Detailed Analysis of Key Mutations
 
-cat > /home/1/analyze_key_mutations.sh << 'EOF'
-#!/bin/bash
+>cat > /home/1/analyze_key_mutations.sh << 'EOF'
+>#!/bin/bash
 
 echo "Detailed analysis of key mutations"
 

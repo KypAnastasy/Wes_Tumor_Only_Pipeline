@@ -528,10 +528,10 @@ for mutation in "${mutations[@]}"; do
     echo ""
 done
 
-EOF
+>EOF
 
-chmod +x /home/1/analyze_key_mutations.sh
-/home/1/analyze_key_mutations.sh > /home/1/key_mutations_detailed_analysis.txt
+>chmod +x /home/1/analyze_key_mutations.sh
+>/home/1/analyze_key_mutations.sh > /home/1/key_mutations_detailed_analysis.txt
 
 
 Explanation:
